@@ -5,14 +5,14 @@
 #include	<pthread.h>
 
 FILE	*fp;
-int clients[100] = {-1};
-char client_id[1000][MAXLINE];
+struct client_info{
+	int connfd;
+	char id[1000];
+}clients[1000],player_info[1000];
+
 int n = 0;
-char result[MAXLINE];
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int player_num = 0;
-char player_id[10][MAXLINE];
-int twoplayer_connfd[10];
 
 void
 sig_chld(int signo)
@@ -37,9 +37,9 @@ void sendtoall(char* msg, int curr)
 	
 	for (i = 1; i <= 10; i++) 
 	{
-		if (i != curr && clients[i] != -1) 
+		if (i != curr && clients[i].connfd != -1) 
 		{
-			if (send(clients[i], msg, strlen(msg), 0) < 0) 
+			if (send(clients[i].connfd, msg, strlen(msg), 0) < 0) 
 			{
 				continue;
 			}
@@ -176,18 +176,18 @@ void* guestroom(void* sock)
 			}
 			else if (n > 0){
 				if (choice == '2'){
-					twoplayer_connfd[player_num] = connfd;
-					strcpy(player_id[player_num],id);
+					player_info[player_num].connfd = connfd;
+					strcpy(player_info[player_num].id,id);
 					player_num++;
 					for ( ; ; ){
 						if (player_num == 2){
 							player_num = 0;
 							
 							twoplayer_info = Malloc(sizeof(struct twoplayer_battle));
-							strcpy(twoplayer_info->id_player1,player_id[0]);
-							strcpy(twoplayer_info->id_player2,player_id[1]);
-							twoplayer_info->connfd1 = twoplayer_connfd[0];
-							twoplayer_info->connfd2 = twoplayer_connfd[1];
+							strcpy(twoplayer_info->id_player1,player_info[0].id);
+							strcpy(twoplayer_info->id_player2,player_info[1].id);
+							twoplayer_info->connfd1 = player_info[0].connfd;
+							twoplayer_info->connfd2 = player_info[0].connfd;
 							
 							pthread_create(&two,NULL,&twoplayergame,twoplayer_info);
 							choice = -1;
@@ -232,7 +232,7 @@ main(int argc, char **argv)
            printf("log file open error!\n");
            exit(0);
         };
-        for (int j=1;j<=10;j++) clients[j] = -1;
+        for (int j=1;j<=10;j++) clients[j].connfd = -1;
 	for ( ; ; ) {
 		int num;
                 char rec[MAXLINE],name[MAXLINE],sent[MAXLINE];
@@ -263,12 +263,12 @@ main(int argc, char **argv)
 				current = 1;
 				break;
 			}
-			else if (clients[j] == -1){
+			else if (clients[j].connfd == -1){
 				current = j;
 				break;
 			}
 		}
-		clients[current] = *iptr;
+		clients[current].connfd = *iptr;
 		cli1 = Malloc(sizeof(struct cli_info));
 		cli1->fd = *iptr;
 		cli1->number = current;
