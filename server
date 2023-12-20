@@ -8,11 +8,12 @@ FILE	*fp;
 struct client_info{
 	int connfd;
 	char id[1000];
-}clients[1000],player_info[1000];
+}clients[1000];
 
 int n = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int player_num = 0;
+int multiplayer_num = 0;
 
 void
 sig_chld(int signo)
@@ -60,6 +61,12 @@ struct twoplayer_battle{
 	int connfd1;
 	int connfd2;
 }*twoplayer_info;
+
+struct multiplayer_battle{
+	int total_player;
+	int multi_connfd[10];
+	char multi_id[10][MAXLINE];
+}*multiplayer_info;
 
 void* twoplayergame(void *sock){
 	char rec[MAXLINE],sent[MAXLINE];;
@@ -145,6 +152,17 @@ void* twoplayergame(void *sock){
 	Writen(playerfd2, sent, MAXLINE);//sent result to client
 }
 
+void* multiplayergame(void *sock){
+	char rec[MAXLINE],sent[MAXLINE];
+	int question_num = 3,question_current = 0;
+	int answer_correct[100] = {0,1,3,4};
+	int player_score[100] = {0};
+	char question[MAXLINE] = "1\n<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
+	
+	int totalplayer;
+	//char []
+}
+
 void* guestroom(void* sock)
 {
 	int connfd,len = 1,num,error,ans,n;
@@ -152,6 +170,7 @@ void* guestroom(void* sock)
 	char rec[MAXLINE],id[MAXLINE],sent[MAXLINE];//\e[31m sample text \e[0m
 	char choice;//1 for single, 2 for two player,3 for multiple player, 4 for player rank
 	pthread_t two;
+	pthread_t three;
 	
 	connfd = ((struct cli_info *) sock)->fd;
 	num = ((struct cli_info *) sock)->number;
@@ -163,39 +182,56 @@ void* guestroom(void* sock)
 	
 	int	maxfdp1 = connfd + 1;
 	fd_set	rset;
+	clock_t time1,time2;
 	
 	for ( ; ; ){
 		FD_SET(connfd, &rset);
 		maxfdp1 = connfd + 1;
 		Select(maxfdp1, &rset, NULL, NULL, NULL);
 		if (FD_ISSET(connfd, &rset)){
-			memset(choice, '\0', sizeof(id));
+			memset(choice, '\0', sizeof(choice));
 			
 			if ((n = Read(connfd, choice, MAXLINE)) == 0) {//read player choice, 2 for duel
 				//end of connection set
 			}
 			else if (n > 0){
 				if (choice == '2'){
-					player_info[player_num].connfd = connfd;
-					strcpy(player_info[player_num].id,id);
 					player_num++;
+					if (player_num == 1){
+						twoplayer_info = Malloc(sizeof(struct twoplayer_battle));
+						strcpy(twoplayer_info->id_player1,id);
+						twoplayer_info->connfd1 = connfd;
+					}
+					else if (player_num == 2){
+						strcpy(twoplayer_info->id_player2,id);
+						twoplayer_info->connfd2 = connfd;
+					}
 					for ( ; ; ){
 						if (player_num == 2){
-							player_num = 0;
-							
-							twoplayer_info = Malloc(sizeof(struct twoplayer_battle));
-							strcpy(twoplayer_info->id_player1,player_info[0].id);
-							strcpy(twoplayer_info->id_player2,player_info[1].id);
-							twoplayer_info->connfd1 = player_info[0].connfd;
-							twoplayer_info->connfd2 = player_info[0].connfd;
-							
 							pthread_create(&two,NULL,&twoplayergame,twoplayer_info);
 							choice = -1;
+							player_num = 0;
 							break;
 						}
 					}
 				}
-				
+				if (choice == '3'){
+					multiplayer_num++;
+					if (multiplayer_num == 1) multiplayer_info = Malloc(sizeof(struct multiplayer_battle));
+					multiplayer_info->total_player = multiplayer_num;
+					multiplayer_info->multi_connfd[multiplayer_num-1] = connfd;
+					strcpy(multiplayer_info->multi_connfd[multiplayer_num-1],id);
+					if (multiplayer_num == 1) time1 = clock();
+					for ( ; ; ){
+						time2 = clock();
+						if (time1 >= time2 + 60000){
+							pthread_create(&three,NULL,&multiplayergame,multiplayer_info);
+							choice = -1;
+							multiplayer_num = 0;
+							break;
+						}
+					}
+				}
 			}
 		}
 	}
