@@ -356,7 +356,8 @@ void* guestroom(void* sock)
 	}
 }
 int *sign_in(void* ptr){
-    cli_info *cli = (cli_info*)ptr;
+    pthread_t tid;
+    struct cli_info *cli = (struct cli_info*)ptr;
     connfd = cli -> fd;
     char recv[MAXLINE], send[MAXLINE];
     snprintf(send, MAXLINE,"1 for sign in 2 for sign up\n");
@@ -383,7 +384,7 @@ int *sign_in(void* ptr){
         }
     }else if(t ==2){
         char id[MAXLINE]= "0\0", pwd[MAXLINE] = "0\0";
-        for (;;)
+        for (;;){
             snprintf(send, MAXLINE, "Please enter your id:\n");
             n = Read(connfd, recv, MAXLINE);
             sscanf(recv, "%s", cli->id);
@@ -395,8 +396,8 @@ int *sign_in(void* ptr){
             user_add(id, pwd);
 	    pthread_create(&tid,NULL,&guestroom,(void*)cli1);
             return 0;
+	}
     }
-
 }
 int main(int argc, char **argv)
 {
