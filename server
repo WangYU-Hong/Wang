@@ -1,4 +1,5 @@
- 
+  
+  
 #include	"unp.h"
 #include	<stdlib.h>
 #include	<stdio.h>
@@ -10,10 +11,64 @@ struct client_info{
 	char id[1000];
 }clients[1000];
 
-int n = 0;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-int player_num = 0;
-int multiplayer_num = 0;
+struct question_form{
+    char question[10000];
+    int answer;
+}q;
+struct question_form q1(int n){
+    struct question_form qq;
+    float n1,n2,a,b,ans,ch1,ch2,ch3,a2,b2,a3,b3,b4;
+    char anschar[10000];
+    int ansch;
+    srand(time(NULL));
+    switch(n){
+        case 1:
+            qq.answer = rand() % 4 + 1;
+            n1 = rand() % 10;
+            n2 = rand() % 10 + 11;
+            a = rand() % 20 - 10;
+            b = rand() % 20 - 10;
+            sprintf(qq.question,"1<定積分(x from %.0f --> %.0f) %.0fx + (%.0f)?>\n",n1,n2,a,b);
+            ans = (n2*n2 - n1*n1)/2*a + (n2-n1)*b;
+            ch1 = ch2 = ch3 = ans;
+            while (ch1 == ans || ch2 == ans || ch3 == ans || ch1 == ch2 || ch2 == ch3 || ch1 == ch3){
+                ch1 = ans + rand() % 50;
+                ch2 = ans + rand() % 50;
+                ch3 = ans + rand() % 50;
+            }
+            if (qq.answer == 1) sprintf(qq.question,"%s,<%.0f>,<%.0f>,<%.0f>,<%.0f>\n",qq.question,ans,ch1,ch2,ch3);
+            if (qq.answer == 2) sprintf(qq.question,"%s,<%.0f>,<%.0f>,<%.0f>,<%.0f>\n",qq.question,ch1,ans,ch2,ch3);
+            if (qq.answer == 3) sprintf(qq.question,"%s,<%.0f>,<%.0f>,<%.0f>,<%.0f>\n",qq.question,ans,ch1,ch2,ans,ch3);
+            if (qq.answer == 4) sprintf(qq.question,"%s,<%.0f>,<%.0f>,<%.0f>,<%.0f>\n",qq.question,ch1,ch2,ch3,ans);
+            return qq;
+            break;
+        case 2:
+            qq.answer = rand() % 4 + 1;
+            a = rand() % 5 * 4 + 4;
+            b = rand() % 5 + 3;
+            n1 = a/2;
+            n2 = a/4;//negative
+            sprintf(qq.question,"%s,<對以下式子做積分: (%.0fx^2)*ln(%.0fx)>",qq.question,a,b);
+            b4 = b;
+            b = b2 = b3  = n2;
+            a = a2 = a3 = n1;
+            while (a == n1 || a2 == n1 || a3 == n1 || a == a2 || a2 == a3 || a == a3 || b == n2 || b2 == n2 || b3 == n2 || b == b2 || b2 == b3 || b == b3){
+                a = n1 + rand()%10;
+                a2 = n1 + rand()%10;
+                a3 = n1 * (rand()%5 + 1);
+                b2 = n1 + rand()%10;
+                b3 = n1 + rand()%10;
+                b = n1 * (rand()%5 + 1);
+            }
+            if (qq.answer == 1) sprintf(qq.question,"%s,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>\n",qq.question,n1,b4,n2,a,b4,b,a2,b4,b2,a3,b4,b3);
+            if (qq.answer == 2) sprintf(qq.question,"%s,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>\n",qq.question,a,b4,b,n1,b4,n2,a2,b4,b2,a3,b4,b3);
+            if (qq.answer == 3) sprintf(qq.question,"%s,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>\n",qq.question,a2,b4,b2,a,b4,b,n1,b4,n2,a3,b4,b3);
+            if (qq.answer == 4) sprintf(qq.question,"%s,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>,<(%.0fx^2)*ln(%.0fx) - %.0fx^2>\n",qq.question,a3,b4,b3,a,b4,b,a2,b4,b2,n1,b4,n2);
+            return qq;
+            break;
+    }
+    
+}
 
 void
 sig_chld(int signo)
@@ -26,12 +81,12 @@ sig_chld(int signo)
         return;
 }
 
-int roundscore(time_t timer){
+int roundscore(clock_t timer){
 	float score = (10 - timer + 1)*1000;
 	return (int)score;
 }
 
-void sendtoall(char* msg, int curr)
+/*void sendtoall(char* msg, int curr)
 {
 	int i;
 	pthread_mutex_lock(&mutex);
@@ -48,19 +103,20 @@ void sendtoall(char* msg, int curr)
 	}
 
 	pthread_mutex_unlock(&mutex);
-}
+}*/
 
 struct cli_info{
 	int fd;
 	int number;
-}*cli1;
+}*cli1;//sent in first thread
 
 struct twoplayer_battle{
-	char id_player1[MAXLINE];
-	char id_player2[MAXLINE];
-	int connfd1;
-	int connfd2;
-}*twoplayer_info;
+	char id_your[MAXLINE];
+	char id_opponent[MAXLINE];
+	int connfd;
+	int connfd_opponent;
+	int result_number;
+}*twoplayer_info,alltwoplayer_info[100];
 
 struct multiplayer_battle{
 	int total_player;
@@ -68,105 +124,152 @@ struct multiplayer_battle{
 	char multi_id[10][MAXLINE];
 }*multiplayer_info;
 
+struct battle_result{
+	int num;
+	char id[10000];
+	int score[10000];
+}result[1000];
+
+int n = 0;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int player_num = 0;
+int multiplayer_num = 0;
+int answer_num = 0;
+int result_seq = 0;
+
 void* twoplayergame(void *sock){
 	char rec[MAXLINE],sent[MAXLINE];;
 	int question_num = 3,question_current = 0;
 	int answer_correct[100] = {0,1,3,4};
-	int player_score[100] = {0};
-	char question[MAXLINE] = "1\n<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
+	int player_score = 0;
+	int connfd;
+	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	
-	char playerid1[MAXLINE],playerid2[MAXLINE];
-	int playerfd1,playerfd2,ans;
-	time_t ans_time;
-	playerfd1 =  ((struct  twoplayer_battle*) sock)->connfd1;
-	playerfd2 =  ((struct  twoplayer_battle*) sock)->connfd2;
-	strcpy(playerid1[MAXLINE],((struct  twoplayer_battle*) sock)->id_player1);
-	strcpy(playerid2[MAXLINE],((struct  twoplayer_battle*) sock)->id_player2);
+	char id_your[MAXLINE],id_opponent[MAXLINE];
+	int connfd_opponent,result_number,ans;
+	result_seq = result_number + 1;
+	
+	clock_t ans_time;
+	connfd =  ((struct  twoplayer_battle*) sock)->connfd;
+	connfd_opponent =  ((struct  twoplayer_battle*) sock)->connfd_opponent;
+	result_number =  ((struct  twoplayer_battle*) sock)->result_number;
+	strcpy(id_your[MAXLINE],((struct  twoplayer_battle*) sock)->id_your);
+	strcpy(id_opponent[MAXLINE],((struct  twoplayer_battle*) sock)->id_opponent);
 	free(sock);
 	Pthread_detach(pthread_self());
 	
-	Writen(playerfd1, question, MAXLINE);//sent question to client
-	Writen(playerfd2, question, MAXLINE);//sent question to client
+	Writen(connfd, question, MAXLINE);//sent question to client
 	
-	int	maxfdp1 = max(playerfd1,playerfd2);
+	int	maxfdp1 = connfd+1;
 	fd_set	rset,wset;
 	
 	for ( ; ; ){
 		FD_ZERO(&rset);
-		FD_SET(playerfd1, &rset);
-		FD_SET(playerfd2, &rset);
-		maxfdp1 = max(playerfd1,playerfd2) + 1;
+		FD_SET(connfd, &rset);
+		maxfdp1 = connfd + 1;
 		Select(maxfdp1, &rset, NULL, NULL, NULL);
 		
-		if (question_current == question_num * 2) break;
-		if (FD_ISSET(playerfd1, &rset)) {	/* socket is readable */
+		if (question_current > question_num) break;
+		if (FD_ISSET(connfd, &rset)) {	/* socket is readable */
 			memset(rec, '\0', sizeof(rec));
-			if ((n = Read(playerfd1, rec, MAXLINE)) == 0) {
+			if ((n = Read(connfd, rec, MAXLINE)) == 0) {
 				//end of connection set
 			}
 			else if (n > 0){
 				question_current++;
 				sscanf(rec,"%d,<%d>\0",&ans,&ans_time);
-				if (ans == answer_correct[(question_current - 1)/2]){
-					player_score[0] += roundscore(ans_time);
+				if (ans == answer_correct[question_current]){
+					player_score += roundscore(ans_time);
 					memset(sent, '\0', sizeof(sent));
-					sprintf(sent,"2\n<%s>,<%d>,<%d>\0",playerid1,player_score[0],1);
-					Writen(playerfd1, sent, MAXLINE);//sent result to client
-					Writen(playerfd2, sent, MAXLINE);//sent result to client
+					sprintf(sent,"2<%s>,<%d>,<%d>\0",id_your,player_score,1);
+					Writen(connfd, sent, MAXLINE);//sent result to client
+					Writen(connfd_opponent, sent, MAXLINE);//sent result to client
 				}
 				else{
 					memset(sent, '\0', sizeof(sent));
-					sprintf(sent,"2\n<%s>,<%d>,<%d>\0",playerid1,player_score[0],0);
-					Writen(playerfd1, sent, MAXLINE);//sent result to client
-					Writen(playerfd2, sent, MAXLINE);//sent result to client
+					sprintf(sent,"2<%s>,<%d>,<%d>\0",id_your,player_score,0);
+					Writen(connfd, sent, MAXLINE);//sent result to client
+					Writen(connfd_opponent, sent, MAXLINE);//sent result to client
 				}
 			}
 		}
-		if (FD_ISSET(playerfd2, &rset)) {	/* socket is readable */
-			memset(rec, '\0', sizeof(rec));
-			if ((n = Read(playerfd2, rec, MAXLINE)) == 0) {
-				//end of connection set
-			}
-			else if (n > 0){
-				question_current++;
-				sscanf(rec,"%d,<%d>\0",&ans,&ans_time);
-				if (ans == answer_correct[(question_current - 1)/2]){
-					player_score[1] += roundscore(ans_time);
-					memset(sent, '\0', sizeof(sent));
-					sprintf(sent,"2\n<%s>,<%d>,<%d>\0",playerid2,player_score[1],1);
-					Writen(playerfd1, sent, MAXLINE);//sent result to client
-					Writen(playerfd2, sent, MAXLINE);//sent result to client
-				}
-				else{
-					memset(sent, '\0', sizeof(sent));
-					sprintf(sent,"2\n<%s>,<%d>,<%d>\0",playerid2,player_score[1],0);
-					Writen(playerfd1, sent, MAXLINE);//sent result to client
-					Writen(playerfd2, sent, MAXLINE);//sent result to client
-				}
-			}
-		}
-	}
+	result[result_number].score[result[result_number].num] = player_score;
+	strcpy(result[result_number].id[result[result_number].num],id_your);
+	result[result_number].num++;
+	
 	memset(sent, '\0', sizeof(sent));
-	sprintf(sent,"3\n<%s>,<%d>,<%d>\n<%s><%d><%d>\0",playerid1,player_score[0],0,playerid2,player_score[1],0);
-	Writen(playerfd1, sent, MAXLINE);//sent result to client
-	Writen(playerfd2, sent, MAXLINE);//sent result to client
+	sprintf(sent,"3<%s>,<%d>,<%d>\n<%s><%d><%d>\0",result[result_number].id[0],result[result_number].score[0],0,result[result_number].id[1],result[result_number].score[1],0);
+	Writen(connfd, sent, MAXLINE);//sent result to client
+	}
 }
 
 void* multiplayergame(void *sock){
 	char rec[MAXLINE],sent[MAXLINE];
-	int question_num = 3,question_current = 0;
-	int answer_correct[100] = {0,1,3,4};
-	int player_score[100] = {0};
-	char question[MAXLINE] = "1\n<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
+	int question_num = 3;//total question
+	int question_current = 1;//current question
+	int answer_correct[100] = {0,1,3,4};//array store correct answer
+	int player_score[100] = {0};//array for player score
+	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	
-	int totalplayer;
-	//char []
+	int total_player,multi_connfd[10];
+	int ans;
+	clock_t ans_time;
+	char multi_id[10][MAXLINE];
+	total_player = ((struct multiplayer_battle*)sock)->total_player;
+	for (int i=0;i<total_player;i++){
+		strcpy(multi_id[i],((struct multiplayer_battle*)sock)->multi_id[i]);
+		multi_connfd[i] = ((struct multiplayer_battle*)sock)->multi_connfd[i];
+	}
+	free(sock);
+	for (int i=0;i<total_player;i++){
+		Writen(multi_connfd[i], question, MAXLINE);//sent question to client
+	}
+	
+	int	maxfdp1 = 1;
+	fd_set	rset;
+	for ( ; ; ){
+		for (int i=0;i<total_player;i++){
+			FD_SET(multi_connfd[i], &rset);
+			maxfdp1 = max(maxfdp1,multi_connfd[i]);
+		}
+		maxfdp1++;
+		Select(maxfdp1, &rset, NULL, NULL, NULL);
+		
+		for (int i=0;i<total_player;i++){
+			if (FD_ISSET(multi_connfd[i], &rset)){
+		 		if ((n = Read(multi_connfd[i], rec, MAXLINE)) == 0) {
+				//end of connection set
+				}
+				else if (n > 0){
+					answer_num++;
+					sscanf(rec,"%d,<%d>\0",&ans,&ans_time);
+					if (ans == answer_correct[question_current]){
+						player_score[i] += 1000*(total_player - answer_num)/total_player;
+						memset(sent, '\0', sizeof(sent));
+						sprintf(sent,"5<%s>,<%d>,<%d>\0",multi_connfd[i],answer_correct[question_current],player_score[i]);
+						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+					}
+					else{
+						memset(sent, '\0', sizeof(sent));
+						sprintf(sent,"4<%s>,<%d>,<%d>\0",multi_connfd[i],ans,0);
+						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+					}
+					if (answer_num == total_player){
+						question_current++;//考慮要不要進入下一題時傳一筆特殊訊息給client
+						answer_num = 0;//assume all player will sent a message to client no matter they answer the question or not
+					}
+				}
+		 	}
+		}
+		if (question_current > question_num) break;	
+	}
+	
 }
 
 void* guestroom(void* sock)
 {
 	int connfd,len = 1,num,error,ans,n;
-	time_t ans_time;
+	
 	char rec[MAXLINE],id[MAXLINE],sent[MAXLINE];//\e[31m sample text \e[0m
 	char choice;//1 for single, 2 for two player,3 for multiple player, 4 for player rank
 	pthread_t two;
@@ -183,6 +286,7 @@ void* guestroom(void* sock)
 	int	maxfdp1 = connfd + 1;
 	fd_set	rset;
 	clock_t time1,time2;
+	struct twoplayer_battle *your_info = Malloc(sizeof(struct twoplayer_battle));
 	
 	for ( ; ; ){
 		FD_SET(connfd, &rset);
@@ -199,16 +303,26 @@ void* guestroom(void* sock)
 					player_num++;
 					if (player_num == 1){
 						twoplayer_info = Malloc(sizeof(struct twoplayer_battle));
-						strcpy(twoplayer_info->id_player1,id);
-						twoplayer_info->connfd1 = connfd;
+						strcpy(twoplayer_info->id_your,id);
+						twoplayer_info->connfd = connfd;
 					}
 					else if (player_num == 2){
-						strcpy(twoplayer_info->id_player2,id);
-						twoplayer_info->connfd2 = connfd;
+						strcpy(twoplayer_info->id_opponent,id);
+						twoplayer_info->connfd_opponent = connfd;
 					}
+					twoplayer_info->result_number = result_seq;
 					for ( ; ; ){
 						if (player_num == 2){
-							pthread_create(&two,NULL,&twoplayergame,twoplayer_info);
+							if (connfd == twoplayer_info->connfd) your_info = twoplayer_info;
+							else{
+								strcpy(your_info->id_your,id);
+								your_info->connfd = connfd;
+								strcpy(your_info->id_opponent,twoplayer_info->id_your);
+								your_info->connfd_opponent = twoplayer_info->connfd;
+								your_info->result_number = result_seq;
+							}
+							
+							pthread_create(&two,NULL,&twoplayergame,your_info);
 							choice = -1;
 							player_num = 0;
 							break;
@@ -217,14 +331,19 @@ void* guestroom(void* sock)
 				}
 				if (choice == '3'){
 					multiplayer_num++;
-					if (multiplayer_num == 1) multiplayer_info = Malloc(sizeof(struct multiplayer_battle));
+					if (multiplayer_num == 1) {
+						time1 = clock();
+						time2 = time1;
+						multiplayer_info = Malloc(sizeof(struct multiplayer_battle));
+					}
 					multiplayer_info->total_player = multiplayer_num;
-					multiplayer_info->multi_connfd[multiplayer_num-1] = connfd;
+					multiplayer_info->multi_connfd[multiplayer_num-1] = connfd;//multiplayer_num-1
 					strcpy(multiplayer_info->multi_connfd[multiplayer_num-1],id);
-					if (multiplayer_num == 1) time1 = clock();
+					
 					for ( ; ; ){
-						time2 = clock();
-						if (time1 >= time2 + 60000){
+						if (connfd == multiplayer_info->multi_connfd[0]) time2 = clock();
+						if (time2 >= time1 + 60000){
+							//starting message?
 							pthread_create(&three,NULL,&multiplayergame,multiplayer_info);
 							choice = -1;
 							multiplayer_num = 0;
@@ -237,13 +356,12 @@ void* guestroom(void* sock)
 	}
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
-	int			listenfd, connfd,connfd2;
+	int			listenfd, connfd;
 	pid_t			childpid;
-	socklen_t		clilen,clilen2;
-	struct sockaddr_in	cliaddr, cliaddr2 , servaddr;
+	socklen_t		clilen;
+	struct sockaddr_in	cliaddr, servaddr;
         char                    buff[MAXLINE];
         time_t			ticks;
         int *iptr;
@@ -269,6 +387,8 @@ main(int argc, char **argv)
            exit(0);
         };
         for (int j=1;j<=10;j++) clients[j].connfd = -1;
+        for (int j=0;j<1000;j++) result[j].num = 0;
+        
 	for ( ; ; ) {
 		int num;
                 char rec[MAXLINE],name[MAXLINE],sent[MAXLINE];
@@ -309,6 +429,6 @@ main(int argc, char **argv)
 		cli1->fd = *iptr;
 		cli1->number = current;
 		
-		pthread_create(&tid,NULL,&guestroom,cli1);		/* parent closes connected socket */
+		pthread_create(&tid,NULL,&guestroom,cli1);
 	}
 }
