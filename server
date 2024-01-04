@@ -358,7 +358,7 @@ void* guestroom(void* sock)
 int *sign_in(void* ptr){
     pthread_t tid;
     struct cli_info *cli = (struct cli_info*)ptr;
-    connfd = cli -> fd;
+    int connfd = cli -> fd;
     char recv[MAXLINE], send[MAXLINE];
     snprintf(send, MAXLINE,"1 for sign in 2 for sign up\n");
     Writen(connfd, send, MAXLINE);
