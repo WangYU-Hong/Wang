@@ -322,7 +322,7 @@ void* guestroom(void* sock)
 								your_info->result_number = result_seq;
 							}
 							
-							pthread_create(&two,NULL,&twoplayergame,your_info);
+							pthread_create(&two,NULL,&twoplayergame,(void*)your_info);
 							choice = -1;
 							player_num = 0;
 							break;
@@ -344,7 +344,7 @@ void* guestroom(void* sock)
 						if (connfd == multiplayer_info->multi_connfd[0]) time2 = clock();
 						if (time2 >= time1 + 60000){
 							//starting message?
-							pthread_create(&three,NULL,&multiplayergame,multiplayer_info);
+							pthread_create(&three,NULL,&multiplayergame,(void*)multiplayer_info);
 							choice = -1;
 							multiplayer_num = 0;
 							break;
