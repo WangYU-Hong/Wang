@@ -10,26 +10,26 @@ typedef struct questions_{
     int answer;
 }Question;
 Question questions[N]; // all question
-int question_num = 0;
+int question_num_ = 0;
 void question_read(){
     FILE *fp = fopen("./problem.txt", "r");
     wchar_t line[N];
-    question_num = 0;
+    question_num_ = 0;
     while(fgetws(line, sizeof(line), fp) != NULL){
         swscanf(line, L"\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\"",
-            questions[question_num].problem,
-            questions[question_num].choice[0],
-            questions[question_num].choice[1],
-            questions[question_num].choice[2],
-            questions[question_num].choice[3]);
-            questions[question_num].answer = 0;
-        ++question_num;
+            questions[question_num_].problem,
+            questions[question_num_].choice[0],
+            questions[question_num_].choice[1],
+            questions[question_num_].choice[2],
+            questions[question_num_].choice[3]);
+            questions[question_num_].answer = 0;
+        ++question_num_;
 
     }
     fclose(fp);
 }
 void question_generate(Question *question){
-    int rd = rand()%question_num;
+    int rd = rand()%question_num_;
     memcpy(question, &questions[rd], sizeof(wchar_t) * N);
     question->answer = rand() % 4;
     wchar_t temp[N];
@@ -41,7 +41,7 @@ void question_generate(Question *question){
 Question question_to_confirm[N];
 int question_to_confirm_num = 0;
 void question_to_confirm_add(Question question){
-    memcpy(question_to_confirm[question_to_confirm_num], question, sizeof(Question));
+    memcpy(&question_to_confirm[question_to_confirm_num], &question, sizeof(Question));
     ++question_to_confirm;
 }
 
