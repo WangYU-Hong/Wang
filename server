@@ -382,7 +382,7 @@ int main(int argc, char **argv)
            printf("log file open error!\n");
            exit(0);
         };
-        for (int j=1;j<=10;j++) clients[j].connfd = -1;
+        
         for (int j=0;j<1000;j++) result[j].num = 0;
         
 	for ( ; ; ) {
@@ -400,8 +400,8 @@ int main(int argc, char **argv)
                 
 		cli1 = Malloc(sizeof(struct cli_info));
 		cli1->fd = *iptr;
-		cli1->number = current;
-		
+
+		free(iptr);
 		pthread_create(&tid,NULL,&guestroom,cli1);
 	}
 }
