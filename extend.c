@@ -42,7 +42,7 @@ Question question_to_confirm[N];
 int question_to_confirm_num = 0;
 void question_to_confirm_add(Question question){
     memcpy(&question_to_confirm[question_to_confirm_num], &question, sizeof(Question));
-    ++question_to_confirm;
+    ++question_to_confirm_num;
 }
 
 
