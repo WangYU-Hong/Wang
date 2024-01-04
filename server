@@ -139,8 +139,12 @@ void* twoplayergame(void *sock){
 	int answer_correct[100] = {0,1,3,4};
 	int player_score = 0;
 	int connfd;
-	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
-	
+	char question[MAXLINE] = "\0";
+
+	Question q[question_num+1]; 			// 1-based array
+	for(int i=1;i<=question_num;i++)question_generate(q+i);
+	for(int i=1;i<=question_num;i++)answer_correct[i] = q[i].answer;
+
 	char id_your[MAXLINE],id_opponent[MAXLINE];
 	int connfd_opponent,result_number,ans;
 	result_seq = result_number + 1;
