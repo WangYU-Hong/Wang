@@ -28,7 +28,7 @@ ssize_t serialize_climsg(const struct climsg *msg, void *buf, size_t buflen)
         memcpy(cur, &msg->anstime, nbytes);
         cur += nbytes;
         nbytes = sizeof(PKTEND);
-        memcpy(cur, PKTEND, nbytes);
+        *(char*)cur = PKTEND;
         cur += nbytes;
         break;
 
@@ -40,7 +40,7 @@ ssize_t serialize_climsg(const struct climsg *msg, void *buf, size_t buflen)
             goto fail;
         }
 
-        snprintf(buf, buflen, "%c%c%s",
+        snprintf(buf, buflen, "%c%c%c",
                  msg->type,
                  msg->menuopt,
                  PKTEND);
@@ -130,6 +130,7 @@ ssize_t serialize_question(const struct question *questions, size_t numq, void *
     wchar_t *cur = buf;
     ssize_t pktlen = 0;
     ssize_t n;
+    const wchar_t delim[] = {DELIM, L'\0'};
     for (int i = 0; i < numq; i++)
     {
         const struct question *currq = &questions[i];
@@ -140,7 +141,7 @@ ssize_t serialize_question(const struct question *questions, size_t numq, void *
             goto fail;
         pktlen += n;
         // ","
-        n = mvcurwcpy(&cur, DELIM, &buflen);
+        n = mvcurwcpy(&cur, delim, &buflen);
         if (n < 0)
             goto fail;
         pktlen += n;
@@ -153,7 +154,7 @@ ssize_t serialize_question(const struct question *questions, size_t numq, void *
             pktlen += n;
             if ((i + 1) == numq && (j + 1) == OPTIONNUM)
                 break;
-            n = mvcurwcpy(&cur, DELIM, &buflen);
+            n = mvcurwcpy(&cur, &delim, &buflen);
             if (n < 0)
                 goto fail;
             pktlen += n;
@@ -169,19 +170,20 @@ fail:
 int deserialize_question(struct question *questions, size_t numq, const void *buf, size_t pktlen)
 {
     const wchar_t* cur = buf;
-    int nwchar = 0, cpyoptions = 0, i = 0, readq = 0;
-    while (readq < numq && (nwchar * sizeof(wchar_t)) < pktlen) {
-        if (*(char*)cur != PKTEND || cur[nwchar++] != DELIM) continue;
+    int nwchar = -1, cpyoptions = 0, i = 0, readq = 0;
+    while (readq < numq && ((void*)cur - buf) < pktlen) {
+        nwchar++;
+        if (cur[nwchar] != DELIM && *(char*)(cur+nwchar) != PKTEND) continue;
 
         // q
         if (!cpyoptions) {
-            wmemcpy(questions->q, cur, nwchar);
-            questions->q[nwchar] = L'0'; // null terminate
+            wmemcpy(questions[readq].q, cur, nwchar);
+            questions[readq].q[nwchar] = L'\0'; // null terminate
             cpyoptions = 1;
         }
         else { // cpy options
-            wmemcpy(questions->option[i], cur, nwchar);
-            questions->option[i][nwchar] = L'0';
+            wmemcpy(questions[readq].option[i], cur, nwchar);
+            questions[readq].option[i][nwchar] = L'\0';
             if (++i >= OPTIONNUM) { // question complete
                 i = 0;
                 cpyoptions = 0;
@@ -191,7 +193,9 @@ int deserialize_question(struct question *questions, size_t numq, const void *bu
         cur += nwchar + 1; // skip delim
         nwchar = 0;
     }
-    if (readq != numq) {
+    // if (cpyoptions || readq == 0) { 
+    if (readq < numq) // incomplete questions
+    {
         printf("%s error: invalid pkt\n", __func__);
         return -1;
     }
@@ -203,20 +207,31 @@ ssize_t serialize_servmsg(const struct servmsg *msg, void *buf, size_t buflen)
     int pktlen = 0;
     ssize_t n;
     char type;
-    char *cur;
+    char *cur = buf;
     switch (msg->type)
     {
     case INIT_2P: // numq, qs
         if (buflen < 2)
             goto fail;
         type = msg->type;
-        memcpy(buf, &type, sizeof(char));
-        pktlen += sizeof(char);
-        n = serialize_question(msg->questions, msg->numq, buf + 1, buflen - pktlen);
+        n = sizeof(type);
+        memcpy(buf, &type, n);
+        pktlen += n;
+        cur += n;
+
+        n = sizeof(msg->numq);
+        memcpy(cur, &msg->numq, n);
+        pktlen += n;
+        cur += n;
+
+        n = serialize_question(msg->questions, msg->numq, cur, buflen - pktlen);
         if (n < 0)
             goto fail;
         pktlen += n;
-        strcat(buf + pktlen, PKTEND);
+        cur += n;
+
+        if (buflen < pktlen + 1) goto fail;
+        *cur = PKTEND;
         pktlen += 1;
         break;
 
@@ -243,7 +258,7 @@ ssize_t serialize_servmsg(const struct servmsg *msg, void *buf, size_t buflen)
         cur += n;
 
         n = 1;
-        memcpy(cur, PKTEND, n);
+        *cur = PKTEND;
         cur += n;
         pktlen = cur - (char *)buf;
         break;
@@ -270,12 +285,13 @@ ssize_t serialize_servmsg(const struct servmsg *msg, void *buf, size_t buflen)
         }
 
         n = 1;
-        memcpy(cur, PKTEND, n);
+        *cur = PKTEND;
         cur += n;
         pktlen = cur - (char *)buf;
         break;
 
     default:
+        goto fail;
         break;
     }
     return pktlen;
@@ -286,7 +302,58 @@ fail:
 
 int deserialize_servmsg(struct servmsg *msg, const void *buf, size_t pktlen) //TODO
 {
+    int ret, nplayer = 0;
+    const char* cur = buf;
+    if (pktlen <= 0) goto fail;
+
+    char type = cur[0];
+    cur++;
+    switch (type)
+    {
+    case INIT_2P:
+        // numq
+        msg->numq = *(size_t*)cur;
+        cur += sizeof(msg->numq);
+        // question
+        ret = deserialize_question(msg->questions, msg->numq, cur, pktlen-((void*)cur-buf));
+        if (ret < 0) goto fail;
+
+        break;
+
+    case EVAL_ANS:
+        // player
+        msg->player = *cur;
+        cur++;
+        // scorechange
+        msg->scorechange = *(int*)cur;
+        cur += sizeof(msg->scorechange);
+        // correct
+        msg->correct = *cur;
+
+        break;
+
+    case GAME_RESULT:
+        // calculate numplayer, player result
+        
+        while (*cur != PKTEND && ((void*) cur - buf) < pktlen) {
+            msg->resultdata[nplayer].score = *(int*) cur;
+            cur += sizeof(msg->resultdata->score);
+            msg->resultdata[nplayer].coin = *(int*) cur;
+            cur += sizeof(msg->resultdata->coin);
+            nplayer++;
+        }
+        msg->numplayer = nplayer;
+        break;
+    
+    default:
+        goto fail;
+        break;
+    }
     return 0;
+
+fail:
+    printf("%s error: invalid pkt\n", __func__);
+    return -1;
 }
 
 void print_servmsg(const struct servmsg *msg)

@@ -1,6 +1,7 @@
 include ../Make.defines
 
 LIBS += -lncursesw
+CFLAGS = -I../lib -g -D_REENTRANT -Wall
 
 client:	client.o
 		${CC} ${CFLAGS} -o $@ client.o ${LIBS}

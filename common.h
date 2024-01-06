@@ -22,7 +22,7 @@ struct climsg
 void print_climsg(const struct climsg* msg);
 /*Serialize msg into buf.
 Buf will terminate with '\\n'.
-Return pkt len on success, -1 on failure*/
+Return pktlen on success, -1 on failure*/
 ssize_t serialize_climsg(const struct climsg* msg, void* buf, size_t buflen);
 /*Deserialize buf into climsg.
 Buf should terminate with '\\n'.
@@ -37,6 +37,8 @@ enum servmsgtype {
 
 #define OPTIONNUM 4
 #define Q_MAXLEN 256
+#define MAXNUMQ 32
+#define MAXPLAYER 10
 
 struct question {
     wchar_t q[Q_MAXLEN];
@@ -75,7 +77,7 @@ struct servmsg {
 void print_servmsg(const struct servmsg* msg);
 /* Serialize msg into buf.
 buf will terminate with '\\n'.
-Return pkt len on success, -1 on error.*/
+Return pktlen on success, -1 on error.*/
 ssize_t serialize_servmsg(const struct servmsg* msg, void* buf, size_t buflen);
 /*Deserialize buf in to msg.
 Return -1 on error.*/
