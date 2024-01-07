@@ -345,7 +345,6 @@ void* guestroom(void* sock)
 							ch = -1;
 							break;
 						}
-						//else fprintf(fp, "connfd :%d is waiting,num: %d\n",connfd,player_num);
 					}
 				}
 				if (ch == 3){
