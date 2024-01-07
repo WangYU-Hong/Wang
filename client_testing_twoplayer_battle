@@ -62,7 +62,7 @@ void xchg_data(FILE *fp, int sockfd)
 	printf("waiting for the question\n");
 	Read(sockfd, recvline, MAXLINE);//read server question 
 	printf("finish for the question\n");
-	printf("recv (all question): %s", recvline);
+	//printf("recv (all question): %s", recvline);
 	stdineof = 0;
 	peer_exit = 0;
 	/*for ( ; ; ) {	
@@ -100,7 +100,7 @@ void xchg_data(FILE *fp, int sockfd)
     sscanf(recvline,"%d,%d",&type,&num);
     char qq[30][MAXLINE];
     for (int i=0;i<strlen(recvline);i++){
-		printf("checking question %d\n",i);
+		//printf("checking question %d\n",i);
         if (recvline[i] == '<'){
             count = 0;
             for ( ; ; ){
@@ -124,14 +124,15 @@ void xchg_data(FILE *fp, int sockfd)
 		printf("Here is the question~ %s\n%s\n%s\n%s\n%s\n",qq[i*5],qq[i*5+1],qq[i*5+2],qq[i*5+3],qq[i*5+4]);//print question
 		a1 = clock();
 		a2 = a1;
-		int persec = 20;
+		int persec = 100;
 		for ( ; ; ) {
 			a2 = clock();
-			printf("time %f (a1:%d  a2:%d)\n",(double)(a2 - a1)/persec,a1,a2);
+			printf("time %f (a1:%d  a2:%d),(readserv: %d)\n",(double)(a2 - a1)/persec,a1,a2,readserv);
 			struct timeval timeout;
 			timeout.tv_sec = 1;  // 5 seconds timeout
 			timeout.tv_usec = 0;
 			if (a2 > a1 + 10*persec ){
+				
 				a1 = 1000*persec;
 				memset(msg, 0, sizeof(struct climsg));
 				msg->type = ANSWER;
@@ -139,6 +140,7 @@ void xchg_data(FILE *fp, int sockfd)
 				msg->anstime = 10000;
 				serialize_climsg(msg,sendline, 11);
 				Writen(sockfd, sendline, strlen(sendline));
+				printf("time up next round!!! send : %s\n",sendline);
 			}	
 			FD_ZERO(&rset);
 			maxfdp1 = 0;
@@ -170,7 +172,7 @@ void xchg_data(FILE *fp, int sockfd)
 					char pid[1000];
 					int sc,right;
 					sscanf(recvline,"2 %s %d %d\0",id,&sc,&right);
-					printf("id: %s score change: %d  correct or no? : %d\n",id,sc,right);
+					printf("recv from server ~ id: %s score change: %d  correct or no? : %d\n",id,sc,right);
 					if (readserv >= 2) break;
 				};
 			}
@@ -198,9 +200,10 @@ void xchg_data(FILE *fp, int sockfd)
 				};
 			}
     	}
+		printf("break out from loop\n");
 	}
 	Read(sockfd, recvline, MAXLINE);//read server question 
-	printf("finish for the question\n");
+	printf("final result: %s\n",recvline);
     
 };
 
