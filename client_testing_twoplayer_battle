@@ -126,19 +126,21 @@ void xchg_data(FILE *fp, int sockfd)
 		a2 = a1;
 		int persec = 100;
 		for ( ; ; ) {
+			if (readserv >= 2) break;
 			a2 = clock();
 			printf("time %f (a1:%d  a2:%d),(readserv: %d)\n",(double)(a2 - a1)/persec,a1,a2,readserv);
 			struct timeval timeout;
 			timeout.tv_sec = 1;  // 5 seconds timeout
 			timeout.tv_usec = 0;
 			if (a2 > a1 + 10*persec ){
-				
+				a2 = clock();
+				printf("time %f (a1:%d  a2:%d),(readserv: %d)\n",(double)(a2 - a1)/persec,a1,a2,readserv);			
 				a1 = 1000*persec;
 				memset(msg, 0, sizeof(struct climsg));
 				msg->type = ANSWER;
 				msg->ans = -1;
 				msg->anstime = 10000;
-				serialize_climsg(msg,sendline, 11);
+				serialize_climsg(msg,(void*)sendline, 11);
 				Writen(sockfd, sendline, strlen(sendline));
 				printf("time up next round!!! send : %s\n",sendline);
 			}	
@@ -173,7 +175,6 @@ void xchg_data(FILE *fp, int sockfd)
 					int sc,right;
 					sscanf(recvline,"2 %s %d %d\0",id,&sc,&right);
 					printf("recv from server ~ id: %s score change: %d  correct or no? : %d\n",id,sc,right);
-					if (readserv >= 2) break;
 				};
 			}
 			if (FD_ISSET(fileno(fp), &rset)) {  /* input is readable */
@@ -194,9 +195,10 @@ void xchg_data(FILE *fp, int sockfd)
 					msg->type = ANSWER;
 					msg->ans = ans;
 					msg->anstime = (time_t)(a2 - a1);
-					serialize_climsg(msg,sendline, 11);
+					serialize_climsg(msg,(void*)sendline, 11);
 					Writen(sockfd, sendline, strlen(sendline));
 					printf("you sent the answer,wait for your opponent,time is %d\n",(a2 - a1)/persec);
+					a1 = 1000*persec;
 				};
 			}
     	}
