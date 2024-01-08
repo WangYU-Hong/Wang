@@ -1,4 +1,4 @@
- 
+  
   
 #include	"unp.h"
 #include	<stdlib.h>
@@ -113,8 +113,7 @@ struct twoplayer_battle{
 	char id_opponent[1000];
 	int connfd;
 	int connfd_opponent;
-	int result_number;
-	int ready;
+	int seq;
 }*twoplayer_info;
 
 struct multiplayer_battle{
@@ -123,25 +122,28 @@ struct multiplayer_battle{
 	char multi_id[10][MAXLINE];
 }*multiplayer_info;
 
-struct battle_result{
+/*struct battle_result{
 	int num;
 	char id[10000];
 	int score[10000];
-}result[1000];
+}result[1000];*/
 
 int n = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int player_num = 0;
 int multiplayer_num = 0;
 int answer_num = 0;
-int result_seq = 0;
+
+int seq_number = 0;
+int flag[1000];
 
 void* twoplayergame(void *sock){
-	char rec[MAXLINE],sent[MAXLINE];;
+	seq_number++;
+	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3,question_current[0] = {0};
 	int answer_correct[100] = {0,1,3,4};
 	int player_score[2] = {0};
-	int connfd;
+	int connfd,seq;
 	//char question[MAXLINE] = "\0";
 	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	struct climsg *msg;
@@ -156,12 +158,11 @@ void* twoplayergame(void *sock){
 
 	char id_your[10000],id_opponent[10000];
 	int connfd_opponent,result_number,ans;
-	result_seq = result_number + 1;
 	
 	time_t ans_time;
 	connfd =  ((struct  twoplayer_battle*) sock)->connfd;
 	connfd_opponent =  ((struct  twoplayer_battle*) sock)->connfd_opponent;
-	result_number =  ((struct  twoplayer_battle*) sock)->result_number;
+	seq =  ((struct  twoplayer_battle*) sock)->seq;
 	strcpy(id_your,((struct  twoplayer_battle*) sock)->id_your);
 	strcpy(id_opponent,((struct  twoplayer_battle*) sock)->id_opponent);
 	free(sock);
@@ -182,7 +183,10 @@ void* twoplayergame(void *sock){
 		FD_SET(connfd, &rset);
 		FD_SET(connfd_opponent, &rset);
 		maxfdp1 = max(connfd,connfd_opponent)+1;
-		Select(maxfdp1, &rset, NULL, NULL, NULL);
+		struct timeval timeout;
+			timeout.tv_sec = 1;  // 5 seconds timeout
+			timeout.tv_usec = 0;
+		Select(maxfdp1, &rset, NULL, NULL, &timeout);
 		
 		if (question_current[0] == question_num && question_current[1] == question_num) break;
 		if (FD_ISSET(connfd, &rset)) {	/* socket is readable */
@@ -206,7 +210,7 @@ void* twoplayergame(void *sock){
 					Writen(connfd, sent, MAXLINE);//sent result to client
 					Writen(connfd_opponent, sent, MAXLINE);//sent result to client
 				}
-			memset(msg, 0, sizeof(struct climsg));
+				memset(msg, 0, sizeof(struct climsg));
 			}
 		}
 		if (FD_ISSET(connfd_opponent, &rset)) {	/* socket is readable */
@@ -230,7 +234,7 @@ void* twoplayergame(void *sock){
 					Writen(connfd, sent, MAXLINE);//sent result to client
 					Writen(connfd_opponent, sent, MAXLINE);//sent result to client
 				}
-			memset(msg, 0, sizeof(struct climsg));
+				memset(msg, 0, sizeof(struct climsg));
 			}
 		}
 	}
@@ -238,6 +242,7 @@ void* twoplayergame(void *sock){
 	sprintf(sent,"3<%s>,<%d>,<%d>\n<%s><%d><%d>\0",id_your,player_score[0],0,id_opponent,player_score[1],0);
 	Writen(connfd, sent, MAXLINE);//sent result to client
 	Writen(connfd_opponent, sent, MAXLINE);//sent result to client
+	flag[seq] = true;
 }
 
 
@@ -328,7 +333,7 @@ void* guestroom(void* sock)
 	Writen(connfd,send,MAXLINE);
 
 	memset(rec, '\0', sizeof(rec));
-
+	int guest_seq = seq_number;
 	for ( ; ; ){
 		FD_SET(connfd, &rset);
 		maxfdp1 = connfd + 1;
@@ -347,30 +352,32 @@ void* guestroom(void* sock)
 					}
 					if (player_num == 1){
 						twoplayer_info = (struct twoplayer_battle *)malloc(sizeof(struct twoplayer_battle));
-						twoplayer_info->ready = false;
+						twoplayer_info->seq = guest_seq;
 						strcpy(twoplayer_info->id_your,id);
 						twoplayer_info->connfd = connfd;
+						flag[guest_seq] = false;
 						//sprintf(send,"wait fo the game to start!!! current player num : %d\n",player_num);
 						//Writen(connfd, send, MAXLINE);//sent question to client
 					}
 					else if (player_num == 2){
 						strcpy(twoplayer_info->id_opponent,id);
 						twoplayer_info->connfd_opponent = connfd;
-						twoplayer_info->result_number = result_seq;
-						twoplayer_info->ready = true;
+						//twoplayer_info->result_number = result_seq;
+						//twoplayer_info->ready = true;
 					}
 					
 					for ( ; ; ){
 						//sprintf(send,"current player num : %d\n",player_num);
 						//Writen(connfd, send, MAXLINE);//sent question to client
-						if (player_num == 2 && twoplayer_info->ready == true){
+						if (flag[guest_seq] == true) break;
+						if (player_num == 2 && connfd == twoplayer_info->connfd_opponent){
 							if (connfd == twoplayer_info->connfd) your_info = twoplayer_info;
 							else{
 								strcpy(your_info->id_your,id);
 								your_info->connfd = connfd;
 								strcpy(your_info->id_opponent,twoplayer_info->id_your);
 								your_info->connfd_opponent = twoplayer_info->connfd;
-								your_info->result_number = result_seq;
+								your_info->seq = guest_seq;
 							}
 							
 							pthread_create(&two,NULL,&twoplayergame,(void*)your_info);
@@ -491,8 +498,6 @@ int main(int argc, char **argv)
            printf("log file open error!\n");
            exit(0);
         };*/
-        
-        for (int j=0;j<1000;j++) result[j].num = 0;
         
 	for ( ; ; ) {
 		
