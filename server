@@ -1,5 +1,3 @@
-  
-  
 #include	"unp.h"
 #include	<stdlib.h>
 #include	<stdio.h>
@@ -120,19 +118,13 @@ struct multiplayer_battle{
 	int total_player;
 	int multi_connfd[10];
 	char multi_id[10][MAXLINE];
+	int seq;
 }*multiplayer_info;
-
-/*struct battle_result{
-	int num;
-	char id[10000];
-	int score[10000];
-}result[1000];*/
 
 int n = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int player_num = 0;
 int multiplayer_num = 0;
-int answer_num = 0;
 
 int seq_number = 0;
 int flag[1000];
@@ -247,21 +239,24 @@ void* twoplayergame(void *sock){
 
 
 void* multiplayergame(void *sock){
+	seq_number++;
 	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3;//total question
-	int question_current = 1;//current question
-	int answer_correct[100] = {0,1,3,4};//array store correct answer
+	int question_current = 0;//current question
+	int answer_correct[100] = {1,3,4,0};//array store correct answer
 	int player_score[100] = {0};//array for player score
-	char question[MAXLINE] = "1,3<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
+	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	
-	int total_player,multi_connfd[10];
-	int ans;
-	clock_t ans_time;
+	int total_player,multi_connfd[10],final_score[10] = {0};
+	int ans,answer_num,finish_flag = 0;
+	double ans_time;
 	char multi_id[10][MAXLINE];
 	total_player = ((struct multiplayer_battle*)sock)->total_player;
+	int seq = ((struct multiplayer_battle*)sock)->seq;
 	for (int i=0;i<total_player;i++){
 		strcpy(multi_id[i],((struct multiplayer_battle*)sock)->multi_id[i]);
 		multi_connfd[i] = ((struct multiplayer_battle*)sock)->multi_connfd[i];
+		final_score[i] = 0;
 	}
 	free(sock);
 	for (int i=0;i<total_player;i++){
@@ -275,38 +270,56 @@ void* multiplayergame(void *sock){
 			FD_SET(multi_connfd[i], &rset);
 			maxfdp1 = max(maxfdp1,multi_connfd[i]);
 		}
+		struct timeval timeout;
+			timeout.tv_sec = 1;  // 5 seconds timeout
+			timeout.tv_usec = 0;
 		maxfdp1++;
-		Select(maxfdp1, &rset, NULL, NULL, NULL);
-		
+		if (finish_flag == total_player) break;
+		Select(maxfdp1, &rset, NULL, NULL, &timeout);
 		for (int i=0;i<total_player;i++){
 			if (FD_ISSET(multi_connfd[i], &rset)){
 		 		if ((n = Read(multi_connfd[i], rec, MAXLINE)) == 0) {
 				//end of connection set
 				}
 				else if (n > 0){
-					answer_num++;
-					sscanf(rec,"%d,<%d>\0",&ans,&ans_time);
-					if (ans == answer_correct[question_current]){
-						player_score[i] += 1000*(total_player - answer_num)/total_player;
-						memset(sent, '\0', sizeof(sent));
-						sprintf(sent,"5<%s>,<%d>,<%d>\0",multi_connfd[i],answer_correct[question_current],player_score[i]);
-						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+					int over;
+					sscanf(rec,"%d",&over);
+					if (over == 99999) {
+						finish_flag++;	
 					}
 					else{
-						memset(sent, '\0', sizeof(sent));
-						sprintf(sent,"4<%s>,<%d>,<%d>\0",multi_connfd[i],ans,0);
-						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
-					}
-					if (answer_num == total_player){
-						question_current++;//考慮要不要進入下一題時傳一筆特殊訊息給client
-						answer_num = 0;//assume all player will sent a message to client no matter they answer the question or not
+						sscanf(rec,"%d %f\0",&ans,&ans_time);
+						if (ans == answer_correct[question_current]){//答案正確
+							player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
+							answer_num = total_player;
+							memset(sent, '\0', sizeof(sent));
+							sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
+							for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+						}
+						else{//答案錯誤
+							answer_num++;
+							memset(sent, '\0', sizeof(sent));
+							sprintf(sent,"0 %s %d %d\0",multi_id[i],player_score[i],ans);
+							for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+						}
+						if (answer_num >= total_player){//叫client進入下一輪
+							memset(sent, '\0', sizeof(sent));
+							sprintf(sent,"2 %d\n",answer_correct[question_current]);
+							for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client//考慮要不要進入下一題時傳一筆特殊訊息給client
+							question_current++;
+							answer_num = 0;//assume all player will sent a message to client no matter they answer the question or not
+						}
+						
 					}
 				}
 		 	}
 		}
-		if (question_current > question_num) break;	
 	}
-	
+	memset(sent, '\0', sizeof(sent));
+	sprintf(sent,"final result:\n");
+	for (int i=0;i<total_player;i++) sprintf(sent,"%splayerid:%s\nplayer score:%d\n",sent,multi_id[i],player_score[i]);
+	for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+	flag[seq] = true;
 }
 
 void* guestroom(void* sock)
@@ -329,11 +342,12 @@ void* guestroom(void* sock)
 	clock_t time1,time2;
 	//struct twoplayer_battle *your_info = Malloc(sizeof(struct twoplayer_battle));
 	struct twoplayer_battle *your_info = (struct twoplayer_battle *)malloc(sizeof(struct twoplayer_battle));
-	snprintf(send, MAXLINE, "Please enter your choice, 1 for single 2 for two player battle:\n");
+	snprintf(send, MAXLINE, "Please enter your choice, 1 (single) ，2 (wo player battle)， 3 (multiplayer battle):\n");
 	Writen(connfd,send,MAXLINE);
 
 	memset(rec, '\0', sizeof(rec));
 	int guest_seq = seq_number;
+	int persec = 1000;
 	for ( ; ; ){
 		FD_SET(connfd, &rset);
 		maxfdp1 = connfd + 1;
@@ -369,7 +383,7 @@ void* guestroom(void* sock)
 					for ( ; ; ){
 						//sprintf(send,"current player num : %d\n",player_num);
 						//Writen(connfd, send, MAXLINE);//sent question to client
-						if (flag[guest_seq] == true) break;
+						//if (flag[guest_seq] == true) break;
 						if (player_num == 2 && connfd == twoplayer_info->connfd_opponent){
 							if (connfd == twoplayer_info->connfd) your_info = twoplayer_info;
 							else{
@@ -388,26 +402,32 @@ void* guestroom(void* sock)
 					}
 				}
 				if (ch == 3){
-					/*multiplayer_num++;
+					multiplayer_num++;
 					if (multiplayer_num == 1) {
 						time1 = clock();
 						time2 = time1;
-						multiplayer_info = Malloc(sizeof(struct multiplayer_battle));
+						//free(multiplayer_info);
+						multiplayer_info = (struct multiplayer_battle*)malloc(sizeof(struct multiplayer_battle));
+						multiplayer_info->seq = guest_seq;
+						flag[guest_seq] = false;
 					}
 					multiplayer_info->total_player = multiplayer_num;
 					multiplayer_info->multi_connfd[multiplayer_num-1] = connfd;//multiplayer_num-1
-					strcpy(multiplayer_info->multi_connfd[multiplayer_num-1],id);
+					strcpy(multiplayer_info->multi_id[multiplayer_num-1],id);
 					
 					for ( ; ; ){
+						if (flag[guest_seq] == true) break;
 						if (connfd == multiplayer_info->multi_connfd[0]) time2 = clock();
-						if (time2 >= time1 + 60000){
+						if (time2 >= time1 + 60*CLOCKS_PER_SEC && connfd == multiplayer_info->multi_connfd[0]){
 							//starting message?
+							//sprintf(send,"time1:%d    time2:%d\n",time1,time2);
+							//Writen(connfd,send,MAXLINE);
 							pthread_create(&three,NULL,&multiplayergame,(void*)multiplayer_info);
 							ch = -1;
 							multiplayer_num = 0;
 							break;
 						}
-					}*/
+					}
 				}
 			}
 					
@@ -493,7 +513,7 @@ int main(int argc, char **argv)
 
         Signal(SIGCHLD, sig_chld);      /* must call waitpid() */
         //Signal(SIGINT, sig_chld);
-		fp = fopen("finalproject.log", "w");
+		fp = fopen("finalproject.log", "a");
         /*if ((fp = fopen("finalproject.log", "w")) == NULL) {
            printf("log file open error!\n");
            exit(0);
