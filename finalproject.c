@@ -517,6 +517,7 @@ void sign_in(void* ptr){
     n = Readline(connfd, recv, MAXLINE);
     if(n==0)return;
     n = deserialize_climsg(&cmsg, recv, n);
+    snprintf(cli->id, N, "%s", cmsg.id);
     char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
     int valid = user_check(cmsg.id, cmsg.pw);
 printf("zz%dzz", valid);
@@ -551,8 +552,76 @@ printf("zz%dzz", valid);
     }
     serialize_servmsg( &smsg, send, sizeof(send));
     Writen(connfd, send, sizeof(send));
-    pthread_create(&tid,NULL,&guestroom,(void*)cli);
+    if(again==1)pthread_create(&tid,NULL,&sign_in,(void*)cli);
+    else pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
+/*
+void ctrlroom(int connfd){
+	int n;
+	char recv[MAXLINE], send[MAXLINE];
+	wchar_t wsend[MAXLINE];
+	snprintf(send, MAXLINE, "0:quit.\n");
+	Writen(connfd, send, MAXLINE);
+	
+	snprintf(send, MAXLINE, "1:commit question.\n");
+	Writen(connfd, send, MAXLINE);
+	
+	snprintf(send, MAXLINE, "2:back up question list.\n");
+	Writen(connfd, send, MAXLINE);
+	
+	snprintf(send, MAXLINE, "3:back up user list.\n");
+	Writen(connfd, send, MAXLINE);
+	
+	Readline(connfd, recv, MAXLINE);
+	int op = 0;
+	sscanf(recv, "%d", &op);
+	
+	
+	
+	
+	
+	
+}*/
+
+/*
+void ctrl_listen(void* ptr){
+	int			listenfd, connfd;
+	socklen_t		clilen;
+	struct sockaddr_in	cliaddr, servaddr;
+        char                    buff[MAXLINE];
+        time_t			ticks;
+        
+        listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sin_family      = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port        = htons(SERV_PORT+2);//set server port
+	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+	Listen(listenfd, LISTENQ);
+
+	for ( ; ; ) {
+		clilen = sizeof(cliaddr);
+                int connfd;
+                
+                if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
+                        if (errno == EINTR)
+                                continue;               /* back to for() 
+                        else
+                                err_sys("accept error");
+                }
+		struct sockaddr_in myaddr;
+		int myaddrlen = sizeof(myaddr);
+		getpeername(connfd, (SA*)&myaddr ,&myaddrlen);
+		ticks = time(NULL);
+		fprintf(fp, "===================\n");
+		fprintf (fp, "CTRL:%.24s: connected from %s, port %d\n",
+		ctime(&ticks),
+		Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof (buff)),
+		ntohs(cliaddr.sin_port));
+		srand((int) ticks);
+		ctrl_room(connfd);
+	}
+}*/
 
 int main(int argc, char **argv)
 {
@@ -568,17 +637,20 @@ int main(int argc, char **argv)
 
 	//init all question array
 	setlocale(LC_ALL, "");
-	question_read();	
+	question_read();
+	
+	
+	
+	
+	
+	
 	
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
-
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family      = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port        = htons(SERV_PORT+3);//set server port
-
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
-
 	Listen(listenfd, LISTENQ);
 
         Signal(SIGCHLD, sig_chld);      /* must call waitpid() */
@@ -588,6 +660,8 @@ int main(int argc, char **argv)
            printf("log file open error!\n");
            exit(0);
         };
+        
+        //pthread_create(&tid,NULL,&ctrlroom,(void*)cli1);
         
 	for ( ; ; ) {
 				clilen = sizeof(cliaddr);
