@@ -11,6 +11,7 @@ struct question question_to_confirm[N];
 int question_to_confirm_num = 0;
 
 void question_read(){
+    srand(time(NULL));
     FILE *fp = fopen("./problem.txt", "r");
     wchar_t line[N];
     question_num_ = 0;
@@ -26,8 +27,23 @@ void question_read(){
     }
     fclose(fp);
 }
+void question_write() {
+    FILE *fp = fopen("./problem.txt", "w");
+    if (fp == NULL) {
+        perror("Error opening file");
+        return;
+    }
+    for (int i = 0; i < question_num_; ++i) {
+        fwprintf(fp, L"\"%ls\",\"%ls\",\"%ls\",\"%ls\",\"%ls\"\n",
+                 questions[i].q,
+                 questions[i].option[0],
+                 questions[i].option[1],
+                 questions[i].option[2],
+                 questions[i].option[3]);
+    }
+    fclose(fp);
+}
 void question_generate(struct question *q){
-    srand(time(NULL));
     int rd = rand()%question_num_;
     memcpy(q, &questions[rd], sizeof(struct question));
     q->ans = rand() % 4;
@@ -76,8 +92,9 @@ void user_write(){
     fclose(fp);
 }
 void user_add(char* id, char* pwd){
-    strcpy(users[user_num].id, id);
-    strcpy(users[user_num].pwd, pwd);
+    snprintf(users[user_num].id, N, id);
+    snprintf(users[user_num].pwd, N, pwd);
+    users[user_num].coin = 0;
     ++user_num;
 }
 //return
