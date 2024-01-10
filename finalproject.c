@@ -545,6 +545,7 @@ printf("zz%dzz", valid);
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
     		if(valid == -1){
+				again = 0;
     			user_add(cmsg.id, cmsg.pw);
     			smsg.success = '1';
     		}else{
@@ -563,7 +564,7 @@ printf("zz%dzz", valid);
 }
 
 
-void ctrlroom(int connfd){
+void ctrl_room(int connfd){
 	int n;
 	char recv[MAXLINE], send[MAXLINE];
 	wchar_t wsend[MAXLINE];
@@ -584,16 +585,16 @@ void ctrlroom(int connfd){
 		int op = 0;
 		sscanf(recv, "%d", &op);
 		switch(op){
-			0:
+			case 0:
 				return;
-			1:
+			case 1:
 				//send problem and all option
 				//recv y/n
 				break;	
-			2:
+			case 2:
 				question_write();
 				break;
-			3:
+			case 3:
 				
 				//user_write();
 				break;
