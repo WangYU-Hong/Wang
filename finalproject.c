@@ -551,7 +551,7 @@ printf("zz%dzz", valid);
     if(again==1)pthread_create(&tid,NULL,&sign_in,(void*)cli);
     else pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
-
+/*
 void ctrlroom(int connfd){
 	int n;
 	char recv[MAXLINE], send[MAXLINE];
@@ -577,10 +577,10 @@ void ctrlroom(int connfd){
 	
 	
 	
-}
+}*/
 
 
-void ctrl_listen(void* ptr){
+void ctrl_listen(void* ptr){/*
 	int			listenfd, connfd;
 	socklen_t		clilen;
 	struct sockaddr_in	cliaddr, servaddr;
@@ -616,7 +616,7 @@ void ctrl_listen(void* ptr){
 		ntohs(cliaddr.sin_port));
 		srand((int) ticks);
 		ctrl_room(connfd);
-	}
+	}*/
 }
 
 int main(int argc, char **argv)
@@ -657,7 +657,7 @@ int main(int argc, char **argv)
            exit(0);
         };
         
-        pthread_create(&tid,NULL,&ctrlroom,(void*)cli1);
+        //pthread_create(&tid,NULL,&ctrlroom,(void*)cli1);
         
 	for ( ; ; ) {
 				clilen = sizeof(cliaddr);
