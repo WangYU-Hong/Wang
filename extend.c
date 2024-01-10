@@ -94,9 +94,5 @@ int user_check(char* id, char* pwd){
 //void user_modify(){}
 
 
-<<<<<<< HEAD
-
-=======
 //for test
 //int main(){}
->>>>>>> 3a4b7bda96f34ce3d1fddc83e91915493ba954aa
