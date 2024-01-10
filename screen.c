@@ -98,14 +98,22 @@ void drawtime(int t) {
 }
 
 void drawquestion(const struct question* q) {
-    int top, left, right;
+    // clear();
+
+    int top, btm, left, right;
     top = 3;
+    btm = LINES - 2 - OPTIONNUM;
     left = COLS / 4;
     right = COLS - left;
 
+    // clear top->btm, left->right
+    move(top, left);
+    for (int y = top; y < btm; y++) {
+        for (int x = left; x < right; x++) {
+            mvaddch(y, x, ' ');
+        }
+    }
     // draw q->q
-    cchar_t buf[Q_MAXLEN];
-    setcchar(buf, q->q, A_NORMAL, 0, NULL);
     move(top, left);
     int x, y;
     for (int i = 0; i < wcslen(q->q); i++) {
@@ -114,7 +122,13 @@ void drawquestion(const struct question* q) {
             // next line
             move(y+1, left);
         }
-        add_wch(buf + i);
+        addnwstr(q->q + i, 1);
+    }
+
+    // clear options on screen
+    for (int i = 0; i < OPTIONNUM; i++) {
+        move(btm + i, 0);
+        clrtoeol();
     }
 
     // draw options (assume they are short enough)
@@ -131,6 +145,7 @@ void drawquestion(const struct question* q) {
         move(getcury(stdscr)+1, left);
     }
 
+    box(stdscr, 0, 0);
     refresh();
 
 }
