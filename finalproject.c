@@ -144,6 +144,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 	total_player = ((struct multiplayer_battle*)sock)->total_player;
 	int seq = ((struct multiplayer_battle*)sock)->seq;
 	for (int i=0;i<total_player;i++){
+		printf("(%d) multi_id: %s multi_connfd: %d numq:%d\n",i,multi_id[i],multi_connfd[i],server_msg->numq);
 		strcpy(multi_id[i],((struct multiplayer_battle*)sock)->multi_id[i]);
 		multi_connfd[i] = ((struct multiplayer_battle*)sock)->multi_connfd[i];
 		final_score[i] = 0;

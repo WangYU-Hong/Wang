@@ -114,11 +114,7 @@ int main(){
     printf("%ls\n", q->option[0]);
     printf("%ls\n", q->option[1]);
     printf("%ls\n", q->option[2]);
-    printf("%ls\n\n", q->option[3]);
-
-<<<<<<< HEAD
+    printf("%ls\n\n", q->option[3]);*/
 
 
-=======
-}*/
->>>>>>> 284b901ebe8ba99433881c8dc84656bd93d3ed02
+
