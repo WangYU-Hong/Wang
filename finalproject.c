@@ -2,6 +2,7 @@
 #include	<stdlib.h>
 #include	<stdio.h>
 #include	<pthread.h>
+#include	<locale.h>
 #include	"extend.h"
 #include	"common.h"
 #define false 0
@@ -508,7 +509,7 @@ void sign_in(void* ptr){
     struct climsg cmsg;
     struct servmsg smsg;
     int n;
-    n = Readline(connfd, recv, MAXLINE);//
+    n = Readline(connfd, recv, MAXLINE);
     if(n==0)return;
     n = deserialize_climsg(&cmsg, recv, n);
     char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
@@ -522,17 +523,20 @@ printf("zz%dzz", valid);
     			smsg.success = '1';
     		}else if(valid == 1){
     			//incorrect
+    			again = 1;
     			smsg.success = '0';
     		}else if(valid == -1){
     			//not found
+    			again = 1;
     			smsg.success = '0';
     		}
     		break;
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
-    		if(valid == -1){
+    		if(valid != -1){
     			smsg.success = '1';
     		}else{
+    			again = 1;
     			smsg.success = '0';
     		}
     		break;
@@ -541,11 +545,7 @@ printf("zz%dzz", valid);
     		break;
     }
     serialize_servmsg( &smsg, send, sizeof(send));
-	print_servmsg(&smsg);
     Writen(connfd, send, sizeof(send));
-	//memset(&smsg,0,sizeof(smsg));
-	//deserialize_servmsg(&smsg, send, strlen(send));
-	//print_servmsg(&smsg);
     pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
 
@@ -561,6 +561,9 @@ int main(int argc, char **argv)
 	time_t			ticks;
         
 
+	//init all question array
+	question_read();	
+	
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
 
 	bzero(&servaddr, sizeof(servaddr));

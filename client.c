@@ -35,8 +35,8 @@ void *reader(void *arg)
 {
     
     char buf[MAXLINE];
-    ssize_t n,not_readed;
-    int ret;
+    ssize_t n;
+    int ret, nready;
     // used to poll pipe_fd[0]
     fd_set chkset;
     struct timeval t;
@@ -57,13 +57,13 @@ void *reader(void *arg)
             t.tv_usec = 0;
             FD_ZERO(&chkset);
             FD_SET(pipe_fd[0], &chkset);
-            not_readed = select(
+            n = select(
                 pipe_fd[0] + 1,
                 &chkset,
                 NULL,
                 NULL,
                 &t);
-        } while (not_readed == 1);
+        } while (n == 1);
         // parse packet
         ret = deserialize_servmsg(&msg, buf, n);
         if (ret < 0)
@@ -198,7 +198,7 @@ int login()
         !(inmsg.type == SERV_LOGIN && outmsg.type == CLI_LOGIN)
         && !(inmsg.type == SERV_REGISTER && outmsg.type == CLI_REGISTER)
     );
-    if (!inmsg.success) {
+    if (inmsg.success == '0') {
         // draw login fail screen
         switch (inmsg.type) {
             case SERV_LOGIN:
