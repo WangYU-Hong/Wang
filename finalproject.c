@@ -116,11 +116,22 @@ void* twoplayergame(void *sock){
 	int question_num = 3;//total question
 	int question_current = 0;//current question
 	int answer_correct[100] = {1,3,4,0};//array store correct answer
+	int player_ans[2][100];
 	int player_score[100] = {0};//array for player score
 	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	
+	struct climsg *client_msg;
+	client_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
+	struct servmsg *server_msg;
+	server_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
+	server_msg->type = INIT_2P;
+	server_msg->questions = (struct question*)malloc(sizeof(struct question));
+	//question set
+	//serialize_question(server_msg->questions,3,);
+
+
 	int total_player,multi_connfd[10],final_score[10] = {0};
-	int ans,answer_num,finish_flag = 0;
+	int ans,answer_num;
 	double ans_time;
 	char multi_id[10][MAXLINE];
 	total_player = ((struct multiplayer_battle*)sock)->total_player;
@@ -143,10 +154,9 @@ void* twoplayergame(void *sock){
 			maxfdp1 = max(maxfdp1,multi_connfd[i]);
 		}
 		struct timeval timeout;
-			timeout.tv_sec = 1;  // 5 seconds timeout
-			timeout.tv_usec = 0;
+		timeout.tv_sec = 1;  // 5 seconds timeout
+		timeout.tv_usec = 0;
 		maxfdp1++;
-		if (finish_flag == total_player) break;
 		Select(maxfdp1, &rset, NULL, NULL, &timeout);
 		for (int i=0;i<total_player;i++){
 			if (FD_ISSET(multi_connfd[i], &rset)){
@@ -154,31 +164,79 @@ void* twoplayergame(void *sock){
 				//end of connection set
 				}
 				else if (n > 0){
-					sscanf(rec,"%d %f\0",&ans,&ans_time);
+					memset(client_msg, 0, sizeof(struct climsg));
+					deserialize_climsg(client_msg,rec,sizeof(struct climsg));
+					ans = atoi(client_msg->ans);
+					ans_time = (double)client_msg->anstime;
+					player_ans[i][question_current] = ans;
+					//sscanf(rec,"%d %f\0",&ans,&ans_time);
 					if (ans == answer_correct[question_current]){//答案正確
 						answer_num++;
 						player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
 						memset(sent, '\0', sizeof(sent));
-						sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
-						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+						memset(server_msg, 0, sizeof(struct servmsg));
+						server_msg->type = EVAL_ANS;
+						server_msg->player = '2';
+						server_msg->scorechange = player_score[i];
+						server_msg->correct = '1';
+						//sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
+						for (int j = 0;j<total_player;j++){
+							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+								Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+							else{
+								//error for serialize server_msg
+							}
+						}
 					}
 					else{//答案錯誤
 						answer_num++;
 						memset(sent, '\0', sizeof(sent));
-						sprintf(sent,"0 %s %d %d\0",multi_id[i],player_score[i],ans);
-						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+						memset(server_msg, 0, sizeof(struct servmsg));
+						server_msg->type = EVAL_ANS;
+						server_msg->player = '2';
+						server_msg->scorechange = player_score[i];
+						server_msg->correct = '0';
+						for (int j = 0;j<total_player;j++){
+							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+								Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+							else{
+								//error for serialize server_msg
+							}
+						}
 					}
 					if (answer_num >= total_player){//叫client進入下一輪
 						memset(sent, '\0', sizeof(sent));
-						sprintf(sent,"2 %d q_c:%d q_n:%d\n",answer_correct[question_current],question_current,question_num);
-						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client//考慮要不要進入下一題時傳一筆特殊訊息給client
+						memset(server_msg, 0, sizeof(struct servmsg));
+						server_msg->ans = (char)(answer_correct[question_current] + 48);
+						//sprintf(,"%d",answer_correct[question_current]);
+						server_msg->type = EVAL_ANS;
+						server_msg->player = '2';
+						for (int j = 0;j<total_player;j++){
+							if (j == 0) server_msg->oppans = (char)(player_ans[1][question_current] + 48);
+							if (j == 1) server_msg->oppans = (char)(player_ans[0][question_current] + 48);
+							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+								Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+							else{
+								//error for serialize server_msg
+							}
+						}
 						question_current++;
 						answer_num = 0;//assume all player will sent a message to client no matter they answer the question or not
 						if (question_current == question_num) {
 							memset(sent, '\0', sizeof(sent));
-							sprintf(sent,"3 final result:\n");
-							for (int j = 0;j<total_player;j++) sprintf(sent,"%splayerid:%s\nplayer score:%d\n",sent,multi_id[j],player_score[j]);
-							for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+							memset(server_msg, 0, sizeof(struct servmsg));
+							server_msg->type = GAME_RESULT;
+							server_msg->numplayer = 2;
+							server_msg->resultdata = (struct player_result*)malloc(sizeof(struct player_result) * 2);
+							for (int j = 0;j<total_player;j++){
+								if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+									Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+								else{
+									//error for serialize server_msg
+								}
+							}
+							//for (int j = 0;j<total_player;j++) sprintf(sent,"%splayerid:%s\nplayer score:%d\n",sent,multi_id[j],player_score[j]);
+							//for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
 							flag[seq] = true;
 							break;
 						}
