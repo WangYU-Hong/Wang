@@ -82,17 +82,18 @@ struct servmsg {
     size_t numq; // number of questions
     struct question* questions;
     char assigned; // '0' to '9'
+    char oppid[LOGIN_MAXLEN];
     // Type 2: client answer response
     char player; // '0' to '9'
     int scorechange;
     char correct; // '0' or '1'
-    char ans;
-    char oppans;
+    char ans; // true answer
+    char oppans; // opponent answer
     // Type 3: game result
     size_t numplayer;
     struct player_result* resultdata;
     // Type 4/5: login/register
-    char success;
+    char success; // '0' or '1'
 };
 
 void cpy_servmsg(struct servmsg* dst, struct servmsg* src);
