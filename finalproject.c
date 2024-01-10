@@ -508,7 +508,7 @@ void sign_in(void* ptr){
     char recv[sizeof(struct climsg)], send[sizeof(struct servmsg)];
     struct climsg cmsg;
     struct servmsg smsg;
-    int n;
+    int n, again;
     n = Readline(connfd, recv, MAXLINE);
     if(n==0)return;
     n = deserialize_climsg(&cmsg, recv, n);
