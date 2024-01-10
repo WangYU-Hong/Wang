@@ -562,6 +562,9 @@ int main(int argc, char **argv)
 	time_t			ticks;
         
 
+	//init all question array
+	question_read();	
+	
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
 
 	bzero(&servaddr, sizeof(servaddr));
