@@ -397,9 +397,9 @@ int deserialize_servmsg(struct servmsg *msg, const void *buf, size_t pktlen) // 
     if (pktlen <= 0)
         goto fail;
 
-    char type = cur[0];
+    msg->type = cur[0];
     cur++;
-    switch (type)
+    switch (msg->type)
     {
     case INIT_2P:
 

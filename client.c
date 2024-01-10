@@ -35,7 +35,7 @@ void *reader(void *arg)
 {
     char buf[MAXLINE];
     ssize_t n;
-    int ret;
+    int ret, nready;
     // used to poll pipe_fd[0]
     fd_set chkset;
     struct timeval t;
@@ -56,13 +56,13 @@ void *reader(void *arg)
             t.tv_usec = 0;
             FD_ZERO(&chkset);
             FD_SET(pipe_fd[0], &chkset);
-            n = select(
+            nready = select(
                 pipe_fd[0] + 1,
                 &chkset,
                 NULL,
                 NULL,
                 &t);
-        } while (n == 1);
+        } while (nready == 1);
         // parse packet
         ret = deserialize_servmsg(&msg, buf, n);
         if (ret < 0)
