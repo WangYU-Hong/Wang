@@ -100,6 +100,19 @@ void drawtime(int t) {
 void drawquestion(const struct question* q) {
     // clear();
 
+    // clear last answer
+    wchar_t* buf = L"正確答案：[1]";
+    move(LINES - 2, (COLS-width(buf))/2);
+    for (int i = 0; i < width(buf); i++) {
+        addch(' ');
+    }
+
+    // clear 3, 4th row
+    move(3, 0);
+    clrtoeol();
+    move(4, 0);
+    clrtoeol();
+
     int top, btm, left, right;
     top = 3;
     btm = LINES - 2 - OPTIONNUM;
@@ -169,30 +182,36 @@ void drawquestion(const struct question* q) {
 
 void updatescore(int isself, int score, char ans, char correct) {
 
-    char buf[32];
+    char scorebuf[32];
     wchar_t wcharbuf[32];
-    move(2, 0);
-    clrtoeol();
-    snprintf(buf, sizeof(buf), "%d", score);
+    // move(2, 0);
+    // clrtoeol();
+    snprintf(scorebuf, sizeof(scorebuf), "%05d", score);
 
     if (isself) {
         swprintf(
             wcharbuf,
             32,
-            L"選擇選項%c：%ls",
-            ans, 
-            (correct == '1') ? L"答對" : L"答錯");
-        mvaddstr(2, 1, buf);
+            L"選擇選項%c",
+            ans);
+        mvaddstr(2, 1, scorebuf);
         mvaddwstr(3, 1, wcharbuf);
+        mvaddwstr(4, 1, (correct == '1') ? L"答對" : L"答錯");
     }
     else {
+        mvaddstr(2, COLS-strlen(scorebuf)-1, scorebuf);
+        swprintf(
+            wcharbuf,
+            32,
+            L"%ls",
+            L"已選擇選項");
+        mvaddwstr(3, COLS-width(wcharbuf)-1, wcharbuf);
         swprintf(
             wcharbuf,
             32,
             L"%ls",
             (correct == '1') ? L"答對" : L"答錯");
-        mvaddstr(2, COLS-strlen(buf), buf);
-        mvaddwstr(3, COLS-width(wcharbuf), wcharbuf);
+        mvaddwstr(4, COLS-width(wcharbuf)-1, wcharbuf);
     }
     box(stdscr, 0, 0);
     refresh();
@@ -204,32 +223,37 @@ void updateans(char myans, char oppans, char trueans) {
     swprintf(buf, 32, L"正確答案：[%c]", trueans);
     mvaddwstr(LINES-2, (COLS-width(buf))/2, buf);
     // draw myans
-    wchar_t* right = (myans == trueans) ? L"答對" : L"答錯";
-    swprintf(buf, 32, L"選擇選項%c：%ls", myans, right);
+    swprintf(buf, 32, L"選擇選項%c", myans);
     mvaddwstr(3, 1, buf);
+    wchar_t* right = (myans == trueans) ? L"答對" : L"答錯";
+    mvaddwstr(4, 1, right);
     // draw oppans
+    swprintf(buf, 32, L"選擇選項%c", oppans);
+    mvaddwstr(3, COLS-width(buf)-1, buf);
     right = (oppans == trueans) ? L"答對" : L"答錯";
-    swprintf(buf, 32, L"選擇選項%c：%ls", oppans, right);
-    mvaddwstr(3, COLS-width(buf), buf);
-
+    mvaddwstr(4, COLS-width(right)-1, right);
+    
     refresh();
 }
 
-void drawresult(const struct player_result* res) {
+void drawresult(const struct player_result* res, char assigned) {
     clear();
     box(stdscr, 0, 0);
 
+    int self = assigned - '0';
     wchar_t* str = L"對戰結果";
     mvaddwstr(1, (COLS-width(str))/2 ,str);
 
+    
     wchar_t buf[32];
-    swprintf(buf, 32, L"你的分數：%d", res[0].score);
+    swprintf(buf, 32, L"你的分數：%d", res[self].score);
     mvaddwstr(3, (COLS-width(buf))/2, buf);
-    swprintf(buf, 32, L"獲得金幣：%d", res[0].coin);
+    swprintf(buf, 32, L"獲得金幣：%d", res[self].coin);
     mvaddwstr(4, (COLS-width(buf))/2, buf);
-    swprintf(buf, 32, L"對手分數：%d", res[1].score);
+    self = !self;
+    swprintf(buf, 32, L"對手分數：%d", res[self].score);
     mvaddwstr(6, (COLS-width(buf))/2, buf);
-    swprintf(buf, 32, L"獲得金幣：%d", res[1].coin);
+    swprintf(buf, 32, L"獲得金幣：%d", res[self].coin);
     mvaddwstr(7, (COLS-width(buf))/2, buf);
 
     str = L"按任意鍵以繼續";

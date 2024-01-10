@@ -299,12 +299,15 @@ int twopgame() {
         n = select(pipe_fd[0]+1, &readset, NULL, NULL, &t);
         if (n == 1) {
             // recved server msg
+            cpy_servmsg(&inmsg, &msg);
             n = read(pipe_fd[1], buf, 1);
             if (n == 0 || buf[0] == '0') {
                 // server closed
                 return SERVCLOSED;
             }
-            // else ignore
+            else if (inmsg.player == '9') {
+                return OPPDC;
+            }
         }
         else if (n == 0) {
             // timeout
@@ -444,7 +447,7 @@ int twopgame() {
             // server closed
             return SERVCLOSED;
         }
-        drawresult(inmsg.resultdata);
+        drawresult(inmsg.resultdata, assigned);
     }
     else if (n == 0) {
         // timed out

@@ -30,7 +30,7 @@ void updatescore(int isself, int score, char ans, char correct);
 
 void updateans(char myans, char oppans, char trueans);
 
-void drawresult(const struct player_result* res);
+void drawresult(const struct player_result* res, char assigned);
 
 // draws endscreen with endmsg
 void drawendscreen(const wchar_t* endmsg);
