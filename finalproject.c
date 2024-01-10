@@ -514,6 +514,7 @@ void sign_in(void* ptr){
     n = Readline(connfd, recv, MAXLINE);
     if(n==0)return;
     n = deserialize_climsg(&cmsg, recv, n);
+    snprintf(cli->id, N, "%s", cmsg.id);
     char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
     int valid = user_check(cmsg.id, cmsg.pw);
 printf("zz%dzz", valid);
@@ -579,8 +580,8 @@ void ctrlroom(int connfd){
 	
 }*/
 
-
-void ctrl_listen(void* ptr){/*
+/*
+void ctrl_listen(void* ptr){
 	int			listenfd, connfd;
 	socklen_t		clilen;
 	struct sockaddr_in	cliaddr, servaddr;
@@ -601,7 +602,7 @@ void ctrl_listen(void* ptr){/*
                 
                 if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
                         if (errno == EINTR)
-                                continue;               /* back to for() */
+                                continue;               /* back to for() 
                         else
                                 err_sys("accept error");
                 }
@@ -616,8 +617,8 @@ void ctrl_listen(void* ptr){/*
 		ntohs(cliaddr.sin_port));
 		srand((int) ticks);
 		ctrl_room(connfd);
-	}*/
-}
+	}
+}*/
 
 int main(int argc, char **argv)
 {
