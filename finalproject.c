@@ -134,7 +134,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 	}
 	server_msg->numq = question_num;
 	//question set 包含 size_t numq; struct question* questions;
-	//serialize_question(server_msg->questions,3,);
+	//serialize_question(server_msg->questions,question_num,sent,sizeof(sent));
 	
 
 	int total_player,multi_connfd[10],final_score[10] = {0};
@@ -164,6 +164,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 		else{
 			//error for serialize server_msg
 		}
+		
 	}
 	
 	int	maxfdp1;
