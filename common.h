@@ -27,6 +27,7 @@ struct climsg
     // Type 2: Menu Options
     char menuopt;
     // Type 3/4: Login
+    // should be null-terminated
     char id[LOGIN_MAXLEN];
     char pw[LOGIN_MAXLEN];
 };
@@ -80,10 +81,13 @@ struct servmsg {
     // Type 1: 2p game
     size_t numq; // number of questions
     struct question* questions;
+    char assigned; // '0' to '9'
     // Type 2: client answer response
     char player; // '0' to '9'
     int scorechange;
     char correct; // '0' or '1'
+    char ans;
+    char oppans;
     // Type 3: game result
     size_t numplayer;
     struct player_result* resultdata;
