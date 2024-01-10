@@ -1,6 +1,11 @@
-#include "unp.h"
+#pragma once
 #include <wchar.h>
 #include <time.h>
+
+// for unp.h
+typedef unsigned int u_int;
+typedef unsigned char u_char;
+#include "unp.h"
 
 enum climsgtype {
     ANSWER = '1', 
@@ -8,21 +13,21 @@ enum climsgtype {
 };
 
 /*If a member is invalid, that member will be zero.
-Example: type=ANSWER, menuopt=0*/ 
+Example: `type=ANSWER, menuopt=0`*/ 
 struct climsg
 {
     enum climsgtype type;
     // Type 1: Answers
-    char ans;
+    char ans; // '0' means timeout
     time_t anstime;
     // Type 2: Menu Options
     char menuopt;
 };
 
 void print_climsg(const struct climsg* msg);
-/*Serialize msg into buf.
-Buf will terminate with '\\n'.
-Return pktlen on success, -1 on failure*/
+/*Serialize `msg` into `buf`.
+`buf` will terminate with '\\n'.
+Return `pktlen` on success, `-1` on failure*/
 ssize_t serialize_climsg(const struct climsg* msg, void* buf, size_t buflen);
 /*Deserialize buf into climsg.
 Buf should terminate with '\\n'.
@@ -60,6 +65,7 @@ struct player_result
     int coin;
 };
 
+// You should prepare buffers for struct `question` and `player_result`.
 struct servmsg {
     enum servmsgtype type;
     // Type 1: 2p game
@@ -74,6 +80,7 @@ struct servmsg {
     struct player_result* resultdata;
 };
 
+void cpy_servmsg(struct servmsg* dst, struct servmsg* src);
 void print_servmsg(const struct servmsg* msg);
 /* Serialize msg into buf.
 buf will terminate with '\\n'.
@@ -87,3 +94,5 @@ int deserialize_servmsg(struct servmsg* msg, const void* buf, size_t pktlen);
 char inttochar(int num);
 /*Print the byte array as hex*/
 void print_hex(char* buf, size_t len);
+
+#define LOGIN_MAXLEN 32

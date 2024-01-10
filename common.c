@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "unp.h"
 #include "common.h"
 
 ssize_t serialize_climsg(const struct climsg *msg, void *buf, size_t buflen)
@@ -154,7 +153,7 @@ ssize_t serialize_question(const struct question *questions, size_t numq, void *
             pktlen += n;
             if ((i + 1) == numq && (j + 1) == OPTIONNUM)
                 break;
-            n = mvcurwcpy(&cur, &delim, &buflen);
+            n = mvcurwcpy(&cur, delim, &buflen);
             if (n < 0)
                 goto fail;
             pktlen += n;
@@ -382,6 +381,24 @@ void print_servmsg(const struct servmsg *msg)
             msg->resultdata[i].score,
             msg->resultdata[i].coin);
     }
+}
+
+void cpy_servmsg(struct servmsg* dst, struct servmsg* src){
+    dst->type = src->type;
+    dst->numq = src->numq;
+    // questions
+    for (int i = 0; i < src->numq; i++) {
+        dst->questions[i] = src->questions[i];
+    }
+    dst->player = src->player;
+    dst->scorechange = src->scorechange;
+    dst->correct = src->correct;
+
+    dst->numplayer = src->numplayer;
+    for (int i = 0; i < src->numplayer; i++) {
+        dst->resultdata[i] = src->resultdata[i];
+    }
+
 }
 
 char inttochar(int num)

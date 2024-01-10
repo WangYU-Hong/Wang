@@ -201,10 +201,29 @@ int main() {
     // to print Chinese char
     setlocale(LC_ALL, "");
     // climsg
-    test_climsg_ser();
-    test_climsg_des();
-    // servmsg
-    test_servmsg_ser();
-    test_servmsg_des();
+    // test_climsg_ser();
+    // test_climsg_des();
+    // // servmsg
+    // test_servmsg_ser();
+    // test_servmsg_des();
+    struct question outq[MAXNUMQ];
+    struct player_result resbuf[MAXPLAYER]; 
+    struct servmsg out = {
+        .questions = outq,
+        .resultdata = resbuf
+    };
+    // questions
+    struct question q[2] = {
+        {L"問題一", {L"一", L"二", L"三", L"四"}},
+        {L"問題二", {L"五", L"六", L"七", L"八"}}
+    };
+    struct servmsg msg = {
+        INIT_2P,
+        2,
+        q
+    };
+    cpy_servmsg(&out, &msg);
+    print_servmsg(&out);
+
 
 }
