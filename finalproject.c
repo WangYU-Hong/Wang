@@ -455,6 +455,27 @@ void* guestroom(void* sock)
 						}
 					}
 				}
+				if(choice == '4'){
+				    Question question;
+				    char send[MAXLINE], recv[MAXLINE];
+
+				    snprintf(send, MAXLINE, "enter question:\n");
+				    Writen(connfd, send, MAXLINE);
+				    int n = Read(connfd, recv, MAXLINE);
+				    wcscpy(question.problem , recv);
+
+				    snprintf(send, MAXLINE, "enter correct anwer:");
+				    Writen(connfd, send, MAXLINE);
+				    n = Read(connfd, recv, MAXLINE);
+				    wcscpy(question.choice[0], recv);
+				    for(int i=1;i<4;i++){
+				        snprintf(send, MAXLINE, "enter other choices(%d):", i);
+				        Writen(connfd, send, MAXLINE);
+				        n = Read(connfd, recv, MAXLINE);
+				        wcscpy(question.choice[i], recv);
+				    }
+				    question_to_confirm_add(question);
+				}
 			}
 					
 		}
@@ -468,50 +489,39 @@ int *sign_in(void* ptr){
     free(ptr);
 	//ptr = NULL;
     int connfd = cli2 -> fd;
-    char recv[MAXLINE], send[MAXLINE];
-    snprintf(send, MAXLINE,"1 for sign in 2 for sign up\n");
-    Writen(connfd, send, MAXLINE);
-    int n = Read(connfd, recv, MAXLINE);
-    int t;
-    sscanf(recv, "%d", &t);
-    if(t == 1){
-        char id[MAXLINE], pwd[MAXLINE];
-        snprintf(send, MAXLINE, "Please enter your id:\n");
-		Writen(connfd, send, MAXLINE);
-        n = Read(connfd, recv, MAXLINE);
-        sscanf(recv, "%s", cli2 -> id);
-        snprintf(send, MAXLINE, "Please enter your password\n");
-		Writen(connfd, send, MAXLINE);
-        n = Read(connfd, recv, MAXLINE);
-        sscanf(recv, "%s", pwd);
-        int valid = user_check(cli2->id, pwd);
-        if(valid == 0){
-                //login message
-		pthread_create(&tid,NULL,&guestroom,(void*)cli2);
-                return 0;
-        }else{
-                //login fail
-                return 1;
-        }
-    }else if(t ==2){
-        char id[MAXLINE]= "0\0", pwd[MAXLINE] = "0\0";
-        for (;;){
-            snprintf(send, MAXLINE, "Please enter your id:\n");
-			Writen(connfd, send, MAXLINE);
-            n = Read(connfd, recv, MAXLINE);
-            sscanf(recv, "%s", cli2->id);
-            /*if(user_check(cli->id, pwd)==-1)break;//先關起來
-            else{}// invalid user name*/
-            snprintf(send, MAXLINE, "Please enter your password:\n");
-			Writen(connfd, send, MAXLINE);
-            n = Read(connfd, recv, MAXLINE);
-            sscanf(recv, "%s", pwd);
-            //user_add(id, pwd);
-	    	pthread_create(&tid,NULL,&guestroom,(void*)cli2);
-			break;
-            return 0;
-		}
+    char recv[sizeof(struct climsg)], send[sizeof(struct servmsg)];
+    struct climsg cmsg;
+    struct servmsg smsg;
+    int n;
+    n = Read(connfd, recv, MAXLINE);
+    n = deserialize_climsg(&cmsg, recv, sizeof(struct msg));
+    char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
+    int valid = user_check(cmsg.id, cmsg.pw);
+    switch(cmsg.type){
+    	case LOGIN:
+    		smsg.type = LOGIN;
+    		if(valid == 0){
+    			//match
+    			smsg.success = '1';
+    		}else if(valid == 1){
+    			//incorrect
+    			smsg.success = '0';
+    		}else if(valid == -1){
+    			//not found
+    			smsg.success = '0';
+    		}
+    		break;
+    	case REGISTER:
+    		smsg.type = REGISTER;
+    		if(valid != -1){
+    			smsg.success = '1';
+    		}else{
+    			smsg.success = '0';
+    		}
+    		break;
     }
+    serialize_servmsg( &smsg, send, sizeof(send));
+    Wrtien(connfd, send, sizeof(send));
 }
 int main(int argc, char **argv)
 {
