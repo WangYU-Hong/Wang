@@ -9,8 +9,12 @@ typedef unsigned char u_char;
 
 enum climsgtype {
     ANSWER = '1', 
-    MENU = '2'
+    MENU = '2',
+    LOGIN = '3',
+    REGISTER = '4'
 };
+
+#define LOGIN_MAXLEN 32
 
 /*If a member is invalid, that member will be zero.
 Example: `type=ANSWER, menuopt=0`*/ 
@@ -22,6 +26,9 @@ struct climsg
     time_t anstime;
     // Type 2: Menu Options
     char menuopt;
+    // Type 3/4: Login
+    char id[LOGIN_MAXLEN];
+    char pw[LOGIN_MAXLEN];
 };
 
 void print_climsg(const struct climsg* msg);
@@ -37,7 +44,9 @@ int deserialize_climsg(struct climsg* msg, const void* buf, size_t pktlen);
 enum servmsgtype {
     INIT_2P = '1', 
     EVAL_ANS='2', 
-    GAME_RESULT='3'
+    GAME_RESULT='3',
+    LOGIN = '4',
+    REGISTER = '5'
 };
 
 #define OPTIONNUM 4
@@ -78,6 +87,8 @@ struct servmsg {
     // Type 3: game result
     size_t numplayer;
     struct player_result* resultdata;
+    // Type 4/5: login/register
+    char success;
 };
 
 void cpy_servmsg(struct servmsg* dst, struct servmsg* src);
@@ -94,5 +105,3 @@ int deserialize_servmsg(struct servmsg* msg, const void* buf, size_t pktlen);
 char inttochar(int num);
 /*Print the byte array as hex*/
 void print_hex(char* buf, size_t len);
-
-#define LOGIN_MAXLEN 32
