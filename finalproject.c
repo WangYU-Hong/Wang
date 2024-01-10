@@ -116,6 +116,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 	seq_number++;
 	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3;//問題數量，請修改
+	int dead = false;
 	int question_current = 0;//current question
 	int answer_correct[100] = {1,3,4,0};//array store correct answer
 	int player_ans[2][100];
@@ -127,7 +128,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 	server_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
 	server_msg->type = INIT_2P;
 	server_msg->questions = (struct question*)malloc(sizeof(struct question) * question_num);
-	for(int i=0;i<n;i++){
+	for(int i=0;i<question_num;i++){
 		question_generate(&server_msg->questions[i]);
 		answer_correct[i] = (int) (server_msg->questions+i)->ans;
 		answer_correct[i]++;
@@ -160,8 +161,11 @@ void twoplayergame(void *sock){//0->player1   1->player2
 			strcpy(server_msg->oppid,multi_id[0]);
 		}
 		printf("第二則(回圈內)(%d) multi_id: %s multi_connfd: %d numq:%d\n",i,server_msg->oppid,server_msg->assigned,server_msg->numq);
-		if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+		if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0){
 			Writen(multi_connfd[i], sent, n);//sent result to client
+			printf("用函數輸出 %d\n",i);
+			print_servmsg(server_msg);
+		}	
 		else{
 			printf("166 serialize error\n");
 		}
@@ -183,7 +187,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 		for (int i=0;i<total_player;i++){
 			if (FD_ISSET(multi_connfd[i], &rset)){
 		 		if ((n = Readline(multi_connfd[i], rec, MAXLINE)) == 0) {
-				//end of connection set
+					dead = true;
 				}
 				else if (n > 0){
 					memset(client_msg, 0, sizeof(struct climsg));
@@ -191,7 +195,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					ans = (int)(client_msg->ans) - 48;
 					ans_time = (double)client_msg->anstime;
 					player_ans[i][question_current] = ans;
-					//sscanf(rec,"%d %f\0",&ans,&ans_time);
+					//printf("接收到client");
 					if (ans == answer_correct[question_current]){//答案正確
 						answer_num++;
 						player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
@@ -337,6 +341,7 @@ void multiplayergame(void *sock){
 						finish_flag++;	
 					}
 					else{
+						
 						sscanf(rec,"%d %lf\0",&ans,&ans_time);
 						if (ans == answer_correct[question_current]){//答案正確
 							player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
@@ -550,8 +555,8 @@ printf("zz%dzz", valid);
     		//error
     		break;
     }
-    serialize_servmsg( &smsg, send, sizeof(send));
-    Writen(connfd, send, sizeof(send));
+    n = serialize_servmsg( &smsg, send, sizeof(send));
+    Writen(connfd, send, n);
     if(again==1)pthread_create(&tid,NULL,&sign_in,(void*)cli);
     else pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
