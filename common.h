@@ -120,3 +120,4 @@ void print_hex(char *buf, size_t len);
 #define SERVCLOSED -1
 #define TIMEOUT -2
 #define OTHERERROR -99
+#define OPPDC -3
