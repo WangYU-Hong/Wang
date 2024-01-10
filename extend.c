@@ -15,7 +15,7 @@ void question_read(){
     wchar_t line[N];
     question_num_ = 0;
     while(fgetws(line, sizeof(line), fp) != NULL){
-        swscanf(line, L"\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\"",
+        swscanf(line, L"\"%l[^\"]\",\"%l[^\"]\",\"%l[^\"]\",\"%l[^\"]\",\"%l[^\"]\"",
             questions[question_num_].q,
             questions[question_num_].option[0],
             questions[question_num_].option[1],
@@ -27,8 +27,9 @@ void question_read(){
     fclose(fp);
 }
 void question_generate(struct question *q){
+    srand(time(NULL));
     int rd = rand()%question_num_;
-    memcpy(q, &questions[rd], sizeof(wchar_t) * N);
+    memcpy(q, &questions[rd], sizeof(struct question));
     q->ans = rand() % 4;
     wchar_t temp[N];
     wcscpy(temp, q->option[(int)q->ans]);
@@ -91,8 +92,24 @@ int user_check(char* id, char* pwd){
     }
 }
 
-//void user_modify(){}
+// for test 
+/*
+int main(){
+    printf("%s\n",setlocale(LC_ALL, ""));
+    question_read();
+    for (int i = 0;i<13;i++){
+        printf("%ls\n", questions[i].q);
+        printf("%ls\n", questions[i].option[0]);
+        printf("%ls\n", questions[i].option[1]);
+        printf("%ls\n", questions[i].option[2]);
+        printf("%ls\n\n", questions[i].option[3]);
+    }
+    struct question *q = malloc(sizeof(question));
+    question_generate(question);
+    printf("%ls\n", q->q);
+    printf("%ls\n", q->option[0]);
+    printf("%ls\n", q->option[1]);
+    printf("%ls\n", q->option[2]);
+    printf("%ls\n\n", q->option[3]);
 
-
-//for test
-//int main(){}
+}*/

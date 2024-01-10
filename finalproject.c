@@ -2,6 +2,7 @@
 #include	<stdlib.h>
 #include	<stdio.h>
 #include	<pthread.h>
+#include	<locale.h>
 #include	"extend.h"
 #include	"common.h"
 #define false 0
