@@ -275,7 +275,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							//for (int j = 0;j<total_player;j++) sprintf(sent,"%splayerid:%s\nplayer score:%d\n",sent,multi_id[j],player_score[j]);
 							//for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
 							flag[seq] = true;
-							break;
+							return;
 						}
 						
 					}
