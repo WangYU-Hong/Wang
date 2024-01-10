@@ -326,13 +326,14 @@ int twopgame() {
         int remaintime  = 10; // 10 sec for each problem
         drawtime(remaintime);
         drawquestion(&inmsg.questions[i]);
-        // timeout every second
         
 
         myflag = oppflag = 0;
         anssent = 0;
 
         while (1) {
+
+            // timeout every second
             t.tv_sec = 1;
             t.tv_usec = 0;
             FD_ZERO(&readset);
@@ -340,7 +341,7 @@ int twopgame() {
             if (!anssent)
                 FD_SET(STDIN_FILENO, &readset);
             n = select(
-                max(pipe_fd[0], STDIN_FILENO),
+                max(pipe_fd[0], STDIN_FILENO) + 1,
                 &readset,
                 NULL,
                 NULL,
@@ -356,7 +357,7 @@ int twopgame() {
                     outmsg.ans = '0';
                     outmsg.anstime = time(NULL);
                     pktlen = serialize_climsg(&outmsg, out, sizeof(out));
-                    write(sockfd, out, pktlen);
+                    Writen(sockfd, out, pktlen);
 
                     // next question
                     break;
