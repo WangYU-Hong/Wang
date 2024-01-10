@@ -508,7 +508,7 @@ void sign_in(void* ptr){
     char recv[sizeof(struct climsg)], send[sizeof(struct servmsg)];
     struct climsg cmsg;
     struct servmsg smsg;
-    int n;
+    int n, again = 0;
     n = Readline(connfd, recv, MAXLINE);
     if(n==0)return;
     n = deserialize_climsg(&cmsg, recv, sizeof(struct climsg));
@@ -522,17 +522,21 @@ void sign_in(void* ptr){
     			smsg.success = '1';
     		}else if(valid == 1){
     			//incorrect
+    			again = 1;
     			smsg.success = '0';
     		}else if(valid == -1){
     			//not found
+    			again = 1;
     			smsg.success = '0';
     		}
     		break;
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
-    		if(valid != -1){
+    		if(valid == -1){
+    			user_add(cmsg.id, cmsg.pw);
     			smsg.success = '1';
     		}else{
+    			again = 1;
     			smsg.success = '0';
     		}
     		break;
@@ -542,7 +546,8 @@ void sign_in(void* ptr){
     }
     n = serialize_servmsg( &smsg, send, sizeof(send));
     Writen(connfd, send, n);
-    pthread_create(&tid,NULL,&guestroom,(void*)cli);
+    if(again) pthread_create(&tid,NULL,&sign_in,(void*)cli);
+    else pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
 
 int main(int argc, char **argv)

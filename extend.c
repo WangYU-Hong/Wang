@@ -75,7 +75,11 @@ void user_write(){
     }
     fclose(fp);
 }
-
+void user_add(char* id, char* pwd){
+    strcpy(users[user_num].id, id);
+    strcpy(users[user_num].pwd, pwd);
+    ++user_num;
+}
 //return
 // -1 : not found
 //  0 : match
