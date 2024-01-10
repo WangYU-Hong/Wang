@@ -11,6 +11,7 @@ struct question question_to_confirm[N];
 int question_to_confirm_num = 0;
 
 void question_read(){
+    srand(time(NULL));
     FILE *fp = fopen("./problem.txt", "r");
     wchar_t line[N];
     question_num_ = 0;
@@ -27,7 +28,6 @@ void question_read(){
     fclose(fp);
 }
 void question_generate(struct question *q){
-    srand(time(NULL));
     int rd = rand()%question_num_;
     memcpy(q, &questions[rd], sizeof(struct question));
     q->ans = rand() % 4;
