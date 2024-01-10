@@ -144,9 +144,9 @@ void twoplayergame(void *sock){//0->player1   1->player2
 	total_player = ((struct multiplayer_battle*)sock)->total_player;
 	int seq = ((struct multiplayer_battle*)sock)->seq;
 	for (int i=0;i<total_player;i++){
-		printf("(%d) multi_id: %s multi_connfd: %d numq:%d\n",i,multi_id[i],multi_connfd[i],server_msg->numq);
 		strcpy(multi_id[i],((struct multiplayer_battle*)sock)->multi_id[i]);
 		multi_connfd[i] = ((struct multiplayer_battle*)sock)->multi_connfd[i];
+		printf("(%d) multi_id: %s multi_connfd: %d numq:%d\n",i,multi_id[i],multi_connfd[i],server_msg->numq);
 		final_score[i] = 0;
 	}
 	free(sock);
@@ -159,10 +159,11 @@ void twoplayergame(void *sock){//0->player1   1->player2
 			server_msg->assigned = (char)49;
 			strcpy(server_msg->oppid,multi_id[0]);
 		}
+		printf("第二則(回圈內)(%d) multi_id: %s multi_connfd: %d numq:%d\n",i,server_msg->oppid,server_msg->assigned,server_msg->numq);
 		if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
 			Writen(multi_connfd[i], sent, n);//sent result to client
 		else{
-			//error for serialize server_msg
+			printf("166 serialize error\n");
 		}
 		
 	}
@@ -384,6 +385,7 @@ void* guestroom(void* sock)
 	
 	connfd = ((struct cli_info *) sock)->fd;
 	strcpy(id,((struct cli_info *) sock)->id);
+	printf("大廳(1) id:%s\n",id);
 	
 	free(sock);//cause double free error
 	//sock = NULL;
@@ -428,6 +430,7 @@ void* guestroom(void* sock)
 					twoplayer_msg->total_player = player_num;
 					twoplayer_msg->multi_connfd[player_num-1] = connfd;//multiplayer_num-1
 					strcpy(twoplayer_msg->multi_id[player_num-1],id);
+					printf("大廳(2) id:%s\n",twoplayer_msg->multi_id[player_num-1]);
 					//char test[1000]; 
 					//sprintf(test,"測試有無執行? tp:%d playernum = %d  connfd[0] = %d  connfd = %d\n",twoplayer_msg->total_player,player_num,twoplayer_msg->multi_connfd[0],connfd);
 					//Writen(connfd,test,MAXLINE);
@@ -535,7 +538,7 @@ printf("zz%dzz", valid);
     		break;
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
-    		if(valid != -1){
+    		if(valid == -1){
     			smsg.success = '1';
     		}else{
     			again = 1;
