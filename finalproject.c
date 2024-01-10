@@ -121,7 +121,7 @@ void* twoplayergame(void *sock){//0->player1   1->player2
 	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	
 	struct climsg *client_msg;
-	client_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
+	client_msg = (struct climsg*)malloc(sizeof(struct climsg));
 	struct servmsg *server_msg;
 	server_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
 	server_msg->type = INIT_2P;
@@ -178,7 +178,7 @@ void* twoplayergame(void *sock){//0->player1   1->player2
 				else if (n > 0){
 					memset(client_msg, 0, sizeof(struct climsg));
 					deserialize_climsg(client_msg,rec,n);
-					ans = atoi(client_msg->ans);
+					ans = (int)(client_msg->ans) - 48;
 					ans_time = (double)client_msg->anstime;
 					player_ans[i][question_current] = ans;
 					//sscanf(rec,"%d %f\0",&ans,&ans_time);
@@ -397,15 +397,16 @@ void* guestroom(void* sock)
 		maxfdp1 = connfd + 1;
 		Select(maxfdp1, &rset, NULL, NULL, NULL);
 		if (FD_ISSET(connfd, &rset)){
-			if ((n = Read(connfd, rec, MAXLINE)) == 0) {//read player choice, 2 for duel
+			if ((n = Readline(connfd, rec, MAXLINE)) == 0) {//read player choice, 2 for duel
 				//end of connection set
 			}
 			else if (n > 0){
 				memset(client_msg,0,sizeof(struct climsg));
-				deserialize_climsg(client_msg,rec,sizeof(rec));
-				ch = atoi(client_msg->menuopt);
+				deserialize_climsg(client_msg,rec,n);
+				ch = (int)(client_msg->menuopt) - 48;
+				printf("this is server, 選擇(%d)\n",ch);
 				guest_seq = seq_number;
-				sscanf(rec,"%d",&ch);//記得關掉
+				//sscanf(rec,"%d",&ch);//記得關掉
 				if (ch == 2){//twoplayer game
 					player_num += 1;
 					

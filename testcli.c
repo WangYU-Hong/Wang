@@ -50,11 +50,18 @@ void xchg_data(FILE *fp, int sockfd)
 
     Read(sockfd, recvline, MAXLINE);//read server 
 	printf("recv (cli choice): %s", recvline);
+	struct climsg *client_msg = (struct climsg*)malloc(sizeof(struct climsg));
 	for ( ; ; ){//start choice loop
 		Fgets(sendline, MAXLINE, fp);//read choice
-		Writen(sockfd, sendline, strlen(sendline));
+		
 		int ch;
 		sscanf(sendline,"%d",&ch);
+
+		memset(sendline,'\0',sizeof(sendline));
+		client_msg->type = MENU;
+		client_msg->menuopt = (char)(ch + 48);
+		serialize_climsg(client_msg,sendline,sizeof(sendline));
+		Writen(sockfd, sendline, strlen(sendline));
 
 		printf("please wait for the game to start!!!\n");
 
