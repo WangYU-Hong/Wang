@@ -190,6 +190,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					dead = true;
 				}
 				else if (n > 0){
+					answer_num++;
 					memset(client_msg, 0, sizeof(struct climsg));
 					n = deserialize_climsg(client_msg,rec,n);
 					printf("接收訊息正確? %d\n",n);
@@ -197,15 +198,16 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					ans_time = client_msg->anstime;
 					player_ans[i][question_current] = ans;
 					printf("接收到client訊息(ans:%d anstime:%d)\n",ans,ans_time);
-					if (ans == answer_correct[question_current]){//答案正確
-						answer_num++;
+					if (answer_num == 1){//答案正確
+						printf("第一則訊息!!!\n");
 						player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->type = EVAL_ANS;
 						server_msg->player = (char)(i + 48);
 						server_msg->scorechange = player_score[i];
-						server_msg->correct = '1';
+						if (ans == answer_correct[question_current]) server_msg->correct = '1';
+						else server_msg->correct = '0';
 						//sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
 						for (int j = 0;j<total_player;j++){
 							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
@@ -215,23 +217,9 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							}
 						}
 					}
-					else{//答案錯誤
-						answer_num++;
-						memset(sent, '\0', sizeof(sent));
-						memset(server_msg, 0, sizeof(struct servmsg));
-						server_msg->type = EVAL_ANS;
-						server_msg->player = (char)(i + 48);;
-						server_msg->scorechange = player_score[i];
-						server_msg->correct = '0';
-						for (int j = 0;j<total_player;j++){
-							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
-								Writen(multi_connfd[j], sent, n);//sent result to client
-							else{
-								//error for serialize server_msg
-							}
-						}
-					}
-					if (answer_num >= total_player){//叫client進入下一輪
+					else if (answer_num == 2){//叫client進入下一輪
+						printf("第二則訊息!!!\n");
+						if (ans == answer_correct[question_current]) player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->ans = (char)(answer_correct[question_current] + 48);
@@ -242,10 +230,12 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							if (j == 1) server_msg->oppans = (char)(player_ans[0][question_current] + 48);
 							if (j == 0) server_msg->player = '0';
 							if (j == 1) server_msg->player = '1';
-							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0){
 								Writen(multi_connfd[j], sent, n);//sent result to client
+								printf("傳送結束信號給client!!!\n");
+							}
 							else{
-								//error for serialize server_msg
+								printf("傳送結束信號給client，serialize error!!!\n");
 							}
 						}
 						question_current++;
@@ -287,7 +277,8 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							flag[seq] = true;
 							break;
 						}
-					}	
+						
+					}
 				}
 		 	}
 		}
