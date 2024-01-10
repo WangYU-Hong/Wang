@@ -563,6 +563,7 @@ int main(int argc, char **argv)
         
 
 	//init all question array
+	setlocale(LC_ALL, "");
 	question_read();	
 	
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
