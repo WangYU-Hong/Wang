@@ -454,13 +454,11 @@ int deserialize_servmsg(struct servmsg *msg, const void *buf, size_t pktlen) // 
 
     case SERV_LOGIN:
     case SERV_REGISTER:
-printf('a');
         msg->success = *cur;
         cur += sizeof(msg->success);
         break;
 
     default:
-printf('b');
         goto fail;
         break;
     }

@@ -79,7 +79,7 @@ void draw2pgame(const char* myid, const char* oppid) {
     box(stdscr, 0, 0);
 
     mvaddwstr(1, 1, L"您的分數");
-    mvaddwstr(1, COLS-width(L"對手分數"), L"對手分數");
+    mvaddwstr(1, COLS-width(L"對手分數")-1, L"對手分數");
     mvaddch(2, 1, '0');
     mvaddch(2, COLS-2, '0');
     // draw id
