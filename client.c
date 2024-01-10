@@ -400,17 +400,19 @@ int twopgame() {
                     // process servmsg
                     if (inmsg.type == EVAL_ANS) {
                         // only process type EVAL_ANS
+                        if (inmsg.player == '9') {
+                            return OPPDC;
+                        }
                         if (inmsg.player == assigned) {
                             myscore += inmsg.scorechange;
-                            updatescore(inmsg.player, myscore, key, inmsg.correct);
+                            updatescore(1, myscore, key, inmsg.correct);
                             myflag = 1;
                         }
                         else {
                             oppscore += inmsg.scorechange;
-                            updatescore(inmsg.player, oppscore, 0, inmsg.correct);
+                            updatescore(0, oppscore, 0, inmsg.correct);
                             oppflag = 1;
                         }
-
                     }
                 }
                 if (myflag && oppflag) {
@@ -480,7 +482,9 @@ void checkerr(int ret) {
         endscreen(L"Timed out");
     case OTHERERROR:
         endscreen(L"Unknown error has occured");
-    
+    case OPPDC:
+        drawendscreen(L"對方已斷線");
+        getch();
     default:
         break;
     }
