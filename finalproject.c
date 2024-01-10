@@ -158,7 +158,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 			strcpy(server_msg->oppid,multi_id[0]);
 		}
 		if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
-			Writen(multi_connfd[i], sent, MAXLINE);//sent result to client
+			Writen(multi_connfd[i], sent, n);//sent result to client
 		else{
 			//error for serialize server_msg
 		}
