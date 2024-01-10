@@ -483,7 +483,7 @@ void* guestroom(void* sock)
 			
 	
 }
-int *sign_in(void* ptr){
+void *sign_in(void* ptr){
     pthread_t tid;
     struct cli_info *cli2 = (struct cli_info*)ptr;
     free(ptr);
