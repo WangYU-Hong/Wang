@@ -31,8 +31,8 @@ void question_generate(struct question *q){
     memcpy(q, &questions[rd], sizeof(wchar_t) * N);
     q->ans = rand() % 4;
     wchar_t temp[N];
-    wcscpy(temp, q->option[q->ans]);
-    wcscpy(q->option[q->ans], q->option[0]);
+    wcscpy(temp, q->option[(int)q->ans]);
+    wcscpy(q->option[(int)q->ans], q->option[0]);
     wcscpy(q->option[0], temp);
 }
 

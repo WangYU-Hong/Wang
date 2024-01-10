@@ -13,6 +13,7 @@ struct question_form{
     char question[10000];
     int answer;
 }q;
+/*
 struct question_form q1(int n){
     struct question_form qq;
     float n1,n2,a,b,ans,ch1,ch2,ch3,a2,b2,a3,b3,b4;
@@ -64,7 +65,7 @@ struct question_form q1(int n){
             break;
     }
     
-}
+}*/
 
 void
 sig_chld(int signo)
@@ -85,7 +86,7 @@ int roundscore(time_t timer){
 struct cli_info{
 	int fd;
 	char id[10000];
-}*cli1;//sent in first thread
+};//sent in first thread //bug?
 
 struct twoplayer_battle{
 	char id_your[1000];
@@ -93,7 +94,7 @@ struct twoplayer_battle{
 	int connfd;
 	int connfd_opponent;
 	int seq;
-}*twoplayer_info;
+}*twoplayer_info;	//bug?
 
 struct multiplayer_battle{
 	int total_player;
@@ -110,7 +111,7 @@ int multiplayer_num = 0;
 int seq_number = 0;
 int flag[1000];
 
-void* twoplayergame(void *sock){//0->player1   1->player2
+void twoplayergame(void *sock){//0->player1   1->player2
 	seq_number++;
 	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3;//total question
@@ -120,14 +121,15 @@ void* twoplayergame(void *sock){//0->player1   1->player2
 	int player_score[100] = {0};//array for player score
 	
 	struct climsg *client_msg;
-	client_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
+	client_msg = (struct climsg*)malloc(sizeof(struct climsg));
 	struct servmsg *server_msg;
 	server_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
 	server_msg->type = INIT_2P;
 	server_msg->questions = (struct question*)malloc(sizeof(struct question) * question_num);
 	for(int i=0;i<n;i++){
-		question_generate(server_msg->questions + i);
+		question_generate(&server_msg->questions[i]);
 		answer_correct[i] = (int) (server_msg->questions+i)->ans;
+		answer_correct[i]++;
 	}
 	
 	//question set 包含 size_t numq; struct question* questions;
@@ -280,7 +282,7 @@ void* twoplayergame(void *sock){//0->player1   1->player2
 }
 
 
-void* multiplayergame(void *sock){
+void multiplayergame(void *sock){
 	seq_number++;
 	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3;//total question
@@ -330,7 +332,7 @@ void* multiplayergame(void *sock){
 						finish_flag++;	
 					}
 					else{
-						sscanf(rec,"%d %f\0",&ans,&ans_time);
+						sscanf(rec,"%d %lf\0",&ans,&ans_time);
 						if (ans == answer_correct[question_current]){//答案正確
 							player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
 							answer_num = total_player;
@@ -460,25 +462,25 @@ void* guestroom(void* sock)
 					}
 				}
 				if(ch == '4'){
-				    Question question;
+				    struct question q;
 				    char send[MAXLINE], recv[MAXLINE];
 
 				    snprintf(send, MAXLINE, "enter question:\n");
 				    Writen(connfd, send, MAXLINE);
 				    int n = Read(connfd, recv, MAXLINE);
-				    wcscpy(question.problem , recv);
+				    wcscpy(q.q , recv);
 
 				    snprintf(send, MAXLINE, "enter correct anwer:");
 				    Writen(connfd, send, MAXLINE);
 				    n = Read(connfd, recv, MAXLINE);
-				    wcscpy(question.choice[0], recv);
+				    wcscpy(q.option[0], recv);
 				    for(int i=1;i<4;i++){
 				        snprintf(send, MAXLINE, "enter other choices(%d):", i);
 				        Writen(connfd, send, MAXLINE);
 				        n = Read(connfd, recv, MAXLINE);
-				        wcscpy(question.choice[i], recv);
+				        wcscpy(q.option[i], recv);
 				    }
-				    question_to_confirm_add(question);
+				    question_to_confirm_add(q);
 				}
 			}
 					
@@ -486,16 +488,16 @@ void* guestroom(void* sock)
 	}		
 }
 void sign_in(void* ptr){
+    Pthread_detach(pthread_self());
     pthread_t tid;
-    struct cli_info *cli2 = (struct cli_info*)ptr;
-    free(ptr);
-	//ptr = NULL;
-    int connfd = cli2 -> fd;
+    struct cli_info *cli = (struct cli_info*)ptr;
+    int connfd = cli -> fd;
     char recv[sizeof(struct climsg)], send[sizeof(struct servmsg)];
     struct climsg cmsg;
     struct servmsg smsg;
     int n;
-    n = Read(connfd, recv, MAXLINE);
+    n = Readline(connfd, recv, MAXLINE);
+    if(n==0)return;
     n = deserialize_climsg(&cmsg, recv, sizeof(struct climsg));
     char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
     int valid = user_check(cmsg.id, cmsg.pw);
@@ -521,16 +523,18 @@ void sign_in(void* ptr){
     			smsg.success = '0';
     		}
     		break;
+    	default :
+    		//error
+    		break;
     }
     serialize_servmsg( &smsg, send, sizeof(send));
     Writen(connfd, send, sizeof(send));
-    
+    pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
 
 int main(int argc, char **argv)
 {
 	int			listenfd, connfd;
-	pid_t			childpid;
 	socklen_t		clilen;
 	struct sockaddr_in	cliaddr, servaddr;
         char                    buff[MAXLINE];
@@ -560,9 +564,6 @@ int main(int argc, char **argv)
         };*/
         
 	for ( ; ; ) {
-		
-                char rec[MAXLINE],name[MAXLINE],sent[MAXLINE];
-                
 				clilen = sizeof(cliaddr);
                 iptr = Malloc(sizeof(int));
                 if ( (*iptr = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
@@ -582,10 +583,8 @@ int main(int argc, char **argv)
                 ntohs(cliaddr.sin_port));
             	srand((int) ticks);
 		
-                
-		cli1 = Malloc(sizeof(struct cli_info));
+                struct cli_info *cli1 = Malloc(sizeof(struct cli_info));
 		cli1->fd = *iptr;
-
 		free(iptr);
 		iptr = NULL;
 		pthread_create(&tid,NULL,&sign_in,(void*)cli1);
