@@ -535,7 +535,7 @@ printf("zz%dzz", valid);
     		break;
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
-    		if(valid != -1){
+    		if(valid == -1){
     			smsg.success = '1';
     		}else{
     			again = 1;
