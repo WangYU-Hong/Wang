@@ -197,7 +197,6 @@ void xchg_data(FILE *fp, int sockfd)
 		}
 		else if (ch == 3){
 			clock_t a1,a2;
-			struct climsg *msg = (struct climsg *)malloc(sizeof(struct climsg));
 			num = 3;
 			printf("start giving question(多人搶答)? num: %d\n",num);
 			for (int i=0;i<num;i++){
@@ -218,11 +217,6 @@ void xchg_data(FILE *fp, int sockfd)
 						stop = true;
 						printf("time %f (a1:%d  a2:%d),(readserv: %d)\n",(double)(a2 - a1)/persec,a1,a2,readserv);			
 						//a1 = 1000*persec;
-						memset(msg, 0, sizeof(struct climsg));
-						msg->type = ANSWER;
-						msg->ans = -1;
-						msg->anstime = 10000;
-						//serialize_climsg(msg,(void*)sendline, 11);
 						sprintf(sendline,"%d %d",-1,10000);
 						Writen(sockfd, sendline, strlen(sendline));
 						printf("時間到!!! send : %s\n",sendline);
@@ -265,13 +259,8 @@ void xchg_data(FILE *fp, int sockfd)
 					}
 					if (FD_ISSET(fileno(fp), &rset)) {  /* input is readable */
 						Fgets(sendline, MAXLINE, fp);
-						memset(msg, 0, sizeof(struct climsg));
 						int ans;
 						sscanf(sendline,"%d",&ans);
-						msg->type = ANSWER;
-						msg->ans = ans;
-						msg->anstime = (time_t)(a2 - a1);
-						//serialize_climsg(msg,(void*)sendline, 11);
 						a2 = clock();
 						sprintf(sendline,"%d %f\n",ans,(double)(a2 - a1)/persec);
 						Writen(sockfd, sendline, strlen(sendline));

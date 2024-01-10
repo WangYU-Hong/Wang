@@ -349,7 +349,7 @@ int twopgame() {
 
             if (n == 0) {
                 // 1 sec passed
-                fprintf(fp,"remaining time %d  nvalue %d\n",remaintime,n);
+                
                 if (--remaintime == 0) {
                     // timeout, send ans = '0'
                     outmsg.type = ANSWER;
