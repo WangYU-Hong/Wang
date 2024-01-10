@@ -170,12 +170,12 @@ void* twoplayergame(void *sock){
 					}
 					if (answer_num >= total_player){//叫client進入下一輪
 						memset(sent, '\0', sizeof(sent));
-						sprintf(sent,"2 %d\n",answer_correct[question_current]);
+						sprintf(sent,"2 %d q_c:%d q_n:%d\n",answer_correct[question_current],question_current,question_num);
 						for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client//考慮要不要進入下一題時傳一筆特殊訊息給client
 						question_current++;
 						answer_num = 0;//assume all player will sent a message to client no matter they answer the question or not
-					}
-					if (question_current == question_num) break;	
+						if (question_current + 1 == question_num) break;
+					}	
 				}
 		 	}
 		}
