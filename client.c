@@ -401,16 +401,16 @@ int twopgame() {
                     if (inmsg.type == EVAL_ANS) {
                         // only process type EVAL_ANS
                         if (inmsg.player == '9') {
-
+                            return OPPDC;
                         }
                         if (inmsg.player == assigned) {
                             myscore += inmsg.scorechange;
-                            updatescore(inmsg.player, myscore, key, inmsg.correct);
+                            updatescore(1, myscore, key, inmsg.correct);
                             myflag = 1;
                         }
                         else {
                             oppscore += inmsg.scorechange;
-                            updatescore(inmsg.player, oppscore, 0, inmsg.correct);
+                            updatescore(0, oppscore, 0, inmsg.correct);
                             oppflag = 1;
                         }
                     }

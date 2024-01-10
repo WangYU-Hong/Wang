@@ -154,8 +154,8 @@ void drawquestion(const struct question* q) {
 ┌─────────────────────────────────────────────────────────────┐
 │您的分數                      time                     對手分數│
 │score                                                   score│
-│                 問題問題問題問題問題問題問題問題問題             │
-│                 問題問題問題問題問題問題問題問題問題             │
+│選擇選項n         問題問題問題問題問題問題問題問題問題        已作答│
+│答對             問題問題問題問題問題問題問題問題問題          答對│
 │                                                             │
 │                                                             │
 │                                                             │
@@ -168,7 +168,7 @@ void drawquestion(const struct question* q) {
 */
 
 void updatescore(int isself, int score, char ans, char correct) {
-    // player = '0' is on left
+
     char buf[32];
     wchar_t wcharbuf[32];
     move(2, 0);
