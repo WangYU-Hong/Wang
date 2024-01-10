@@ -33,14 +33,16 @@ void test_climsg_ser()
     pktlen = serialize_climsg(&msg3, buf, sizeof(buf));
     assert(pktlen > 0);
     cur = buf;
+    assert(*cur == msg3.type);
+    cur++;
     char *tmp = strchr(cur, ',');
     assert(*tmp == ',');
     *tmp = 0; // null term
-    assert(0 == strcmp(&msg3.id, cur));
+    assert(0 == strcmp(msg3.id, cur));
     cur = tmp + 1;
     tmp = strchr(cur, PKTEND);
     *tmp = 0;
-    assert(0 == strcmp(&msg3.pw, cur));
+    assert(0 == strcmp(msg3.pw, cur));
     // cur += strlen(cur);
     puts("test climsg serialize pass");
 }
@@ -99,7 +101,11 @@ void test_servmsg_ser()
     cur++;
     assert(*cur == msg.assigned);
     cur++;
-    strchr(cur, ',');
+    // char *tmp = strchr(cur, ',');
+    // assert(*tmp == ',');
+    // *tmp = 0;
+    assert(0 == strcmp(msg.oppid, cur));
+    cur += strlen(msg.oppid) + 1;
     assert(*(size_t *)cur == msg.numq);
     cur += sizeof(msg.numq);
     // questions
@@ -118,12 +124,15 @@ void test_servmsg_ser()
     }
     cur -= sizeof(wchar_t);
     assert(*cur == PKTEND);
+
     // eval_ans
     struct servmsg msg2 = {
         EVAL_ANS,
         .player = '1',
         .scorechange = 55555,
-        .correct = '0'};
+        .correct = '0',
+        .ans = '1',
+        .oppans = '2'};
     pktlen = serialize_servmsg(&msg2, buf, sizeof(buf));
     assert(pktlen >= 0);
     cur = buf;
@@ -134,6 +143,10 @@ void test_servmsg_ser()
     assert(*(int *)cur == msg2.scorechange);
     cur += sizeof(msg2.scorechange);
     assert(*cur == msg2.correct);
+    cur++;
+    assert(*cur == msg2.ans);
+    cur++;
+    assert(*cur == msg2.oppans);
     cur++;
     assert(*cur == PKTEND);
     // game_result
@@ -156,6 +169,19 @@ void test_servmsg_ser()
         cur += sizeof(msg3.resultdata[i].coin);
     }
     assert(*cur == PKTEND);
+    // login
+    struct servmsg msg4 = {
+        SERV_LOGIN,
+        .success = '0'};
+    pktlen = serialize_servmsg(&msg4, buf, sizeof(buf));
+    assert(pktlen >= 0);
+    cur = buf;
+    assert(*cur == msg4.type);
+    cur++;
+    assert(*cur == msg4.success);
+    cur++;
+    assert(*cur == PKTEND);
+
     puts("test servmsg serialize pass");
 }
 
@@ -175,12 +201,16 @@ void test_servmsg_des()
         {L"問題二", {L"五", L"六", L"七", L"八"}}};
     struct servmsg msg = {
         INIT_2P,
+        '1',
+        "testoppid",
         2,
         q};
     pktlen = serialize_servmsg(&msg, buf, sizeof(buf));
     ret = deserialize_servmsg(&out, buf, pktlen);
     assert(ret >= 0);
     assert(out.numq == msg.numq);
+    assert(out.assigned == msg.assigned);
+    assert(0 == strcmp(out.oppid, msg.oppid));
     for (int i = 0; i < msg.numq; i++)
     {
         size_t n = wcslen(msg.questions[i].q);
@@ -196,13 +226,17 @@ void test_servmsg_des()
         EVAL_ANS,
         .player = '0',
         .scorechange = 435621,
-        .correct = '1'};
+        .correct = '1',
+        .ans = '4',
+        .oppans = '3'};
     pktlen = serialize_servmsg(&msg, buf, sizeof(buf));
     ret = deserialize_servmsg(&out, buf, pktlen);
     assert(ret >= 0);
     assert(out.player == msg.player);
     assert(out.scorechange == msg.scorechange);
     assert(out.correct == msg.correct);
+    assert(out.ans == msg.ans);
+    assert(out.oppans == msg.oppans);
     // game result
     struct player_result res[2] = {
         {100, 200},
@@ -221,6 +255,14 @@ void test_servmsg_des()
         assert(out.resultdata[i].coin == msg.resultdata[i].coin);
     }
 
+    msg = (struct servmsg){
+        .type = SERV_REGISTER,
+        .success = '1'};
+    pktlen = serialize_servmsg(&msg, buf, sizeof(buf));
+    ret = deserialize_servmsg(&out, buf, pktlen);
+    assert(ret >= 0);
+    assert(out.success == msg.success);
+
     puts("test servmsg deserialize pass");
 }
 
@@ -229,11 +271,11 @@ int main()
     // to print Chinese char
     setlocale(LC_ALL, "");
     // climsg
-    // test_climsg_ser();
-    // test_climsg_des();
-    // // servmsg
-    // test_servmsg_ser();
-    // test_servmsg_des();
+    test_climsg_ser();
+    test_climsg_des();
+    // servmsg
+    test_servmsg_ser();
+    test_servmsg_des();
     struct question outq[MAXNUMQ];
     struct player_result resbuf[MAXPLAYER];
     struct servmsg out = {
@@ -245,6 +287,8 @@ int main()
         {L"問題二", {L"五", L"六", L"七", L"八"}}};
     struct servmsg msg = {
         INIT_2P,
+        '0',
+        "idid",
         2,
         q};
     cpy_servmsg(&out, &msg);

@@ -47,7 +47,7 @@ ssize_t serialize_climsg(const struct climsg *msg, void *buf, size_t buflen)
 
     case CLI_LOGIN:
     case CLI_REGISTER:
-        pktlen = strlen(msg->id) + strlen(msg->menuopt) + 2;
+        pktlen = strlen(msg->id) + strlen(msg->pw) + 3;
         if (buflen < pktlen)
         {
             buflenerr = 1;
@@ -56,10 +56,10 @@ ssize_t serialize_climsg(const struct climsg *msg, void *buf, size_t buflen)
         snprintf(
             buf,
             buflen,
-            "%c%c,%c%c",
+            "%c%s,%s%c",
             msg->type,
             msg->id,
-            msg->menuopt,
+            msg->pw,
             PKTEND);
         break;
 
@@ -130,12 +130,13 @@ int deserialize_climsg(struct climsg *msg, const void *buf, size_t pktlen)
                 goto fail;
             }
         }
-        for (; i < pktlen - 1; i++)
+        for (i = 0; i < pktlen-(cur-bytebuf); i++)
         {
-            if (cur[i] != DELIM)
+            if (cur[i] != PKTEND)
                 continue;
             strncpy(msg->pw, cur, i);
             success = 1;
+            break;
         }
         if (!success)
         {
@@ -455,7 +456,8 @@ int deserialize_servmsg(struct servmsg *msg, const void *buf, size_t pktlen) // 
     case SERV_REGISTER:
         msg->success = *cur;
         cur += sizeof(msg->success);
-
+        break;
+        
     default:
         goto fail;
         break;
