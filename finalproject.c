@@ -110,7 +110,7 @@ int multiplayer_num = 0;
 int seq_number = 0;
 int flag[1000];
 
-void* twoplayergame(void *sock){
+void* twoplayergame(void *sock){//0->player1   1->player2
 	seq_number++;
 	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3;//total question
@@ -126,9 +126,9 @@ void* twoplayergame(void *sock){
 	server_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
 	server_msg->type = INIT_2P;
 	server_msg->questions = (struct question*)malloc(sizeof(struct question));
-	//question set
+	//question set 包含 size_t numq; struct question* questions;
 	//serialize_question(server_msg->questions,3,);
-
+	
 
 	int total_player,multi_connfd[10],final_score[10] = {0};
 	int ans,answer_num;
@@ -143,7 +143,19 @@ void* twoplayergame(void *sock){
 	}
 	free(sock);
 	for (int i=0;i<total_player;i++){
-		Writen(multi_connfd[i], question, MAXLINE);//sent question to client
+		if (i == 0){
+			server_msg->assigned = (char)48;
+			strcpy(server_msg->oppid,multi_id[1]);
+		}
+		if (i == 1){
+			server_msg->assigned = (char)49;
+			strcpy(server_msg->oppid,multi_id[0]);
+		}
+		if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+			Writen(multi_connfd[i], sent, MAXLINE);//sent result to client
+		else{
+			//error for serialize server_msg
+		}
 	}
 	
 	int	maxfdp1;
@@ -228,6 +240,21 @@ void* twoplayergame(void *sock){
 							server_msg->type = GAME_RESULT;
 							server_msg->numplayer = 2;
 							server_msg->resultdata = (struct player_result*)malloc(sizeof(struct player_result) * 2);
+							server_msg->resultdata[0].score = player_score[0];
+							server_msg->resultdata[1].score = player_score[1];
+							if (player_score[0] > player_score[1]){
+								server_msg->resultdata[0].coin = 500;
+								server_msg->resultdata[1].coin = -100;
+							}
+							else if(player_score[0] < player_score[1]){
+								server_msg->resultdata[1].coin = 500;
+								server_msg->resultdata[0].coin = -100;
+							}
+							else{
+								server_msg->resultdata[1].coin = 100;
+								server_msg->resultdata[0].coin = 100;
+							}
+							
 							for (int j = 0;j<total_player;j++){
 								if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
 									Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
