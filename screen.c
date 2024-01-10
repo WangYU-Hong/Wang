@@ -7,6 +7,19 @@ void initscreen() {
     noecho(); // disable echoing of input
     intrflush(stdscr, FALSE);
     keypad(stdscr, TRUE); // enable arrow key
+    curs_set(0); // set cursor invisible
+}
+
+void drawloginmenu() {
+    clear();
+    box(stdscr, 0, 0);
+    wchar_t* buf = L"[1] 登入";
+    mvaddwstr(LINES/2, (COLS-width(buf))/2, buf);
+    buf = L"[2] 註冊";
+    mvaddwstr(LINES/2+1, (COLS-width(buf))/2, buf);
+    buf = L"[Q] 退出";
+    mvaddwstr(LINES-1, (COLS-width(buf))/2, buf);
+    refresh();
 }
 
 void drawmenu() {
@@ -61,7 +74,7 @@ void drawwaiting() {
     refresh();
 }
 
-void draw2pgame() {
+void draw2pgame(const char* myid, const char* oppid) {
     clear();
     box(stdscr, 0, 0);
 
@@ -69,6 +82,9 @@ void draw2pgame() {
     mvaddwstr(1, COLS-width(L"對手分數"), L"對手分數");
     mvaddch(2, 1, '0');
     mvaddch(2, COLS-2, '0');
+    // draw id
+    mvaddstr(LINES-2, 1, myid);
+    mvaddstr(LINES-2, COLS-1-strlen(oppid), oppid);
     
     refresh();
 }
@@ -132,33 +148,55 @@ void drawquestion(const struct question* q) {
 │                 [2] 選項  　　　　　　                        │
 │                 [3] 選項  　　　　　　                        │
 │                 [4] 選項 　　　　　　                         │
-│                                                             │
+│ID                                                         ID│
 └─────────────────────────────────────────────────────────────┘
 */
 
-void updatescore(char player, int score, char ans, char correct) {
+void updatescore(int isself, int score, char ans, char correct) {
     // player = '0' is on left
     char buf[32];
     wchar_t wcharbuf[32];
-    move(1, 0);
+    move(2, 0);
     clrtoeol();
     snprintf(buf, sizeof(buf), "%d", score);
-    swprintf(
-        wcharbuf,
-        32,
-        L"選擇選項%c：%ls",
-        ans, 
-        (correct == '1') ? L"答對" : L"答錯");
 
-    if (player == '0') {
+    if (isself) {
+        swprintf(
+            wcharbuf,
+            32,
+            L"選擇選項%c：%ls",
+            ans, 
+            (correct == '1') ? L"答對" : L"答錯");
         mvaddstr(2, 1, buf);
         mvaddwstr(3, 1, wcharbuf);
     }
-    else if (player == '1') {
+    else {
+        swprintf(
+            wcharbuf,
+            32,
+            L"%ls",
+            (correct == '1') ? L"答對" : L"答錯");
         mvaddstr(2, COLS-strlen(buf), buf);
         mvaddwstr(3, COLS-width(wcharbuf), wcharbuf);
     }
     box(stdscr, 0, 0);
+    refresh();
+}
+
+void updateans(char myans, char oppans, char trueans) {
+    // draw trueans
+    wchar_t buf[32];
+    swprintf(buf, 32, L"正確答案：[%c]", trueans);
+    mvaddwstr(LINES-2, (COLS-width(buf))/2, buf);
+    // draw myans
+    wchar_t* right = (myans == trueans) ? L"答對" : L"答錯";
+    swprintf(buf, 32, L"選擇選項%c：%ls", myans, right);
+    mvaddwstr(3, 1, buf);
+    // draw oppans
+    right = (oppans == trueans) ? L"答對" : L"答錯";
+    swprintf(buf, 32, L"選擇選項%c：%ls", oppans, right);
+    mvaddwstr(3, COLS-width(buf), buf);
+
     refresh();
 }
 
@@ -184,6 +222,26 @@ void drawresult(const struct player_result* res) {
     refresh();
 }
 
+void drawreplay() {
+    clear();
+    box(stdscr, 0, 0);
+    wchar_t* buf = L"[R] 回到主畫面";
+    mvaddwstr(LINES/2, (COLS-width(buf))/2, buf);
+    buf = L"[Q] 退出";
+    mvaddwstr(LINES/2+1, (COLS-width(buf))/2, buf);
+    refresh();
+}
+
 int width(const wchar_t* s) {
     return wcswidth(s, wcslen(s));
+}
+
+void endscreen(const wchar_t* endmsg) {
+    drawendscreen(endmsg);
+    getch();
+    exitwin(0);
+}
+void exitwin(int status) {
+    endwin();
+    exit(status);
 }

@@ -115,3 +115,8 @@ int deserialize_servmsg(struct servmsg *msg, const void *buf, size_t pktlen);
 char inttochar(int num);
 /*Print the byte array as hex*/
 void print_hex(char *buf, size_t len);
+
+// my errors
+#define SERVCLOSED -1
+#define TIMEOUT -2
+#define OTHERERROR -99

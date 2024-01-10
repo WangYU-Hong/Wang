@@ -29,6 +29,8 @@ static struct servmsg msg = {.questions = q, .resultdata = res};
 static ssize_t pktlen;
 static char out[MAXLINE];
 
+static char myid[LOGIN_MAXLEN];
+
 void *reader(void *arg)
 {
     char buf[MAXLINE];
@@ -88,6 +90,35 @@ void *reader(void *arg)
 
 int login()
 {
+    struct climsg outmsg;
+    relogin:
+    // draw login options
+    drawloginmenu();
+    
+    while (1) {
+        char key = getch();
+        switch (key)
+        {
+        case '1':
+            outmsg.type = CLI_LOGIN;
+            break;
+
+        case '2':
+            outmsg.type = CLI_REGISTER;
+            break;
+
+        case 'q':
+            exitwin(0);
+            break;
+        
+        default:
+            continue;
+            break;
+        }
+        break;
+    }
+
+
     // draw login screen
     clear();
     box(stdscr, 0, 0);
@@ -109,25 +140,23 @@ int login()
     refresh();
 
     // get user input
-    char id[LOGIN_MAXLEN], pw[LOGIN_MAXLEN];
+    curs_set(1);
     nocbreak();
     echo();
     move(idinputy, idinputx);
     refresh();
-    getnstr(id, LOGIN_MAXLEN);
+    getnstr(outmsg.id, LOGIN_MAXLEN);
     move(pwinputy, pwinputx);
     refresh();
-    getnstr(pw, LOGIN_MAXLEN);
+    getnstr(outmsg.pw, LOGIN_MAXLEN);
     cbreak();
     noecho();
     curs_set(0); // invisible
 
     // send id and pwd
-    strcpy(out, id);
-    Writen(sockfd, out, strlen(out));
-    strcpy(out, pw);
-    Writen(sockfd, out, strlen(out));
-    // wait until server response
+    pktlen = serialize_climsg(&outmsg, out, sizeof(out));
+    Writen(sockfd, out, pktlen);
+    // wait until server login response
     mvaddstr(
         pwinputy + 1,
         pwinputx - strlen(pwdprompt),
@@ -135,38 +164,57 @@ int login()
     refresh();
 
     int n = 0;
-    // pthread_mutex_lock(&msg_mutex);
-    // while (!hasmsg) {
-    //     err = pthread_cond_timedwait(&msg_cond, &msg_mutex, &t);
-    //     if (err) break;
-    //     else {
-    //         hasmsg = 0;
-    //     }
-    // }
-    // pthread_mutex_unlock(&msg_mutex);
+    char buf[1];
+    struct servmsg inmsg; // no need to prepare buffers
     fd_set readset;
-    FD_ZERO(&readset);
-    FD_SET(pipe_fd[0], &readset);
-    // 10 sec timeout
-    struct timeval t = {.tv_sec = 10};
-    n = select(pipe_fd[0]+1, &readset, NULL, NULL, &t);
+    do {
+        FD_ZERO(&readset);
+        FD_SET(pipe_fd[0], &readset);
+        // 10 sec timeout
+        struct timeval t = {.tv_sec = 10};
+        n = select(pipe_fd[0]+1, &readset, NULL, NULL, &t);
 
-    switch (n)
-    {
-    case 0: // timeout
-        return -1;
-        break;
-    
-    case 1:
-        char buf[1];
-        read(pipe_fd[0], buf, 1);
-        // read msg
-        break;
-    
-    default:
-        return -2;
-        break;
+        switch (n)
+        {
+        case 0: // timeout
+            return TIMEOUT;
+            break;
+        
+        case 1:
+            // read msg
+            cpy_servmsg(&inmsg, &msg);
+            n = read(pipe_fd[0], buf, 1);
+            if (n == 0 || buf[0] == '0') {
+                return SERVCLOSED;
+            }
+            break;
+        
+        default:
+            return OTHERERROR;
+            break;
+        }
+    }while (
+        !(inmsg.type == SERV_LOGIN && outmsg.type == CLI_LOGIN)
+        && !(inmsg.type == SERV_REGISTER && outmsg.type == CLI_REGISTER)
+    );
+    if (!inmsg.success) {
+        // draw login fail screen
+        switch (inmsg.type) {
+            case SERV_LOGIN:
+                drawendscreen(L"登入失敗");
+                break;
+            case SERV_REGISTER:
+                drawendscreen(L"註冊失敗");
+                break;
+            default:
+                drawendscreen(L"大失敗");
+                break;
+        }
+        getch();
+        goto relogin;
     }
+    // login or register success
+    strncpy(myid, outmsg.id, sizeof(myid));
     return 0;
 }
 
@@ -186,7 +234,7 @@ char menu()
         case '4':
             goto end;
         case 'q':
-            exit(0);
+            exitwin(0);
         
         default:
             break;
@@ -207,7 +255,7 @@ int twopgame() {
     struct player_result inres[MAXPLAYER];
     struct servmsg inmsg = {.questions = inq, .resultdata = inres};
     struct climsg outmsg;
-    char buf[1];
+    char buf[1], assigned;
     int n;
 
     drawwaiting();
@@ -229,11 +277,12 @@ int twopgame() {
         n = read(pipe_fd[0], buf, 1);
         if (n == 0 || buf[0] == '0') {
             // server closed
-            return -1;
+            return SERVCLOSED;
         }
     } while (inmsg.type != INIT_2P); // wait until an INIT_2P message
     
-    draw2pgame();
+    draw2pgame(myid, inmsg.oppid);
+    assigned = inmsg.assigned;
     // wait 5 secs then start game
 
     struct timeval t = {.tv_sec = 1};
@@ -248,7 +297,7 @@ int twopgame() {
             n = read(pipe_fd[1], buf, 1);
             if (n == 0 || buf[0] == '0') {
                 // server closed
-                return -1;
+                return SERVCLOSED;
             }
             // else ignore
         }
@@ -262,10 +311,11 @@ int twopgame() {
         }
     }
 
+    // start game
     int myscore = 0, oppscore = 0;
     int myflag = 0, oppflag = 0; // when recved both, go to next question
+    int anssent = 0;
     char key;
-    // start game
     for (int i = 0; i < inmsg.numq; i++) {
         // draw problems
         int remaintime  = 10; // 10 sec for each problem
@@ -276,11 +326,13 @@ int twopgame() {
         t.tv_usec = 0;
 
         myflag = oppflag = 0;
+        anssent = 0;
 
         while (1) {
             FD_ZERO(&readset);
             FD_SET(pipe_fd[0], &readset);
-            FD_SET(STDIN_FILENO, &readset);
+            if (!anssent)
+                FD_SET(STDIN_FILENO, &readset);
             n = select(
                 max(pipe_fd[0], STDIN_FILENO),
                 &readset,
@@ -323,6 +375,7 @@ int twopgame() {
                         default:
                             break; // ignore
                     }
+                    anssent = 1;
                 }
                 if (FD_ISSET(pipe_fd[0], &readset)) {
                     // recved servmsg, read the message out
@@ -330,37 +383,35 @@ int twopgame() {
                     n = read(pipe_fd[0], buf, 1);
                     if (n == 0 || buf[0] == '0') {
                         // serv closed
-                        return -1;
+                        return SERVCLOSED;
                     }
                     // process servmsg
                     if (inmsg.type == EVAL_ANS) {
                         // only process type EVAL_ANS
-                        if (inmsg.player == '0') {
+                        if (inmsg.player == assigned) {
                             myscore += inmsg.scorechange;
                             updatescore(inmsg.player, myscore, key, inmsg.correct);
                             myflag = 1;
                         }
-                        else if (inmsg.player == '1') {
+                        else {
                             oppscore += inmsg.scorechange;
-                            updatescore(inmsg.player, oppscore, '0', inmsg.correct);
+                            updatescore(inmsg.player, oppscore, 0, inmsg.correct);
                             oppflag = 1;
                         }
 
                         if (myflag && oppflag) {
                             // got both responses, move to next question
-                            // #TODO display correct answer
-
+                            // display correct answer
+                            updateans(key, inmsg.oppans, inmsg.ans);
                             // wait 5 secs then next question
                             for (int wait = 5; wait > 0; wait--) {
                                 drawtime(wait);
                                 sleep(1);
                             }
                             break;
-
                         } 
                     }
                 }
-                
             }
         }
     }
@@ -377,23 +428,50 @@ int twopgame() {
         n = read(pipe_fd[0], buf, 1);
         if (n == 0 || buf[0] == '0') {
             // server closed
-            return -1;
+            return SERVCLOSED;
         }
         drawresult(inmsg.resultdata);
     }
     else if (n == 0) {
         // timed out
-        return -2;
+        return TIMEOUT;
     }
     getch();
     return 0;
 }
 
-void endscreen(const wchar_t* endmsg) {
-    drawendscreen(endmsg);
-    getch();
-    endwin();
-    exit(0);
+int replay() {
+    drawreplay();
+    char key;
+    while (1) {
+        key = getch();
+        switch (key)
+        {
+        case 'r':
+            return 1;
+            break;
+        case 'q':
+            exitwin(0);
+        
+        default:
+            break;
+        }
+    }
+}
+
+void checkerr(int ret) {
+    switch (ret)
+    {
+    case SERVCLOSED:
+        endscreen(L"伺服器已斷線");
+    case TIMEOUT:
+        endscreen(L"Timed out");
+    case OTHERERROR:
+        endscreen(L"Unknown error has occured");
+    
+    default:
+        break;
+    }
 }
 
 int main(int argc, char **argv)
@@ -401,44 +479,27 @@ int main(int argc, char **argv)
     initscreen();
     Pipe(pipe_fd);
 
-    // // const wchar_t wstr[] = L"早安";
+    if (argc != 2)
+        err_quit("usage: client <IPaddress>");
 
-    // // mvaddwstr(0, 0, wstr);
+    sockfd = Socket(AF_INET, SOCK_STREAM, 0);
 
-    // while (1) {
-    //     int key = getch();
-    //     clear();
-    //     mvaddch(0, 0, key);
-    //     refresh();
-    // }
+    struct sockaddr_in servaddr = {AF_INET};
+    servaddr.sin_port = htons(SERV_PORT + 3);
+    Inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 
-    // getch();
+    Connect(sockfd, (SA *)&servaddr, sizeof(servaddr));
 
-    // if (argc != 2)
-    //     err_quit("usage: client <IPaddress>");
+    pthread_t readthread;
+    pthread_create(&readthread, NULL, reader, NULL);
+    pthread_detach(readthread);
 
-    // sockfd = Socket(AF_INET, SOCK_STREAM, 0);
-
-    // struct sockaddr_in servaddr = {AF_INET};
-    // servaddr.sin_port = htons(SERV_PORT + 3);
-    // Inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
-
-    // Connect(sockfd, (SA *)&servaddr, sizeof(servaddr));
-
-    // pthread_t readthread;
-    // // pthread_t writethread;
-    // pthread_create(&readthread, NULL, reader, NULL);
-    // pthread_detach(readthread);
-    // pthread_create(&writethread, NULL, writer, NULL);
+    // start client logic
     int ret;
     ret = login();
-    if (ret == -1) {
-        endscreen(L"Timed out");
-    }
-    else if (ret == -2) {
-        endscreen(L"Unknown error has occured");
-    }
+    checkerr(ret);
 
+    menu:
     char menuopt = menu();
     switch (menuopt) {
         case '2':
@@ -448,21 +509,8 @@ int main(int argc, char **argv)
             endscreen(L"Not yet implemented");
     }
 
-    switch (ret)
-    {
-    case -1:
-        endscreen(L"伺服器已斷線");
-        break;
-    case 0:
-        endscreen(L"成功結束");
-        break;
-    case -2:
-        endscreen(L"Timed out");
-    
-    default:
-        break;
-    }
-
+    checkerr(ret);
+    if (replay()) goto menu;
 
     endscreen(NULL);
 }
