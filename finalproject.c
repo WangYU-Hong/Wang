@@ -115,17 +115,21 @@ void* twoplayergame(void *sock){//0->player1   1->player2
 	char rec[MAXLINE],sent[MAXLINE];
 	int question_num = 3;//total question
 	int question_current = 0;//current question
-	int answer_correct[100] = {1,3,4,0};//array store correct answer
+	int answer_correct[100] = {0};//array store correct answer
 	int player_ans[2][100];
 	int player_score[100] = {0};//array for player score
-	char question[MAXLINE] = "1<question: what month is today?>,<1 december>,<2 november>,<3 july>,<4 october>\n<question: evaluate the population of the world>,<1 eighty million>,<2 eighty trillion>,<3 eighty billion>,<4 eighty thosand>\n<question: which date is the deadline of the final project?>,<1 12/25>,<2 12/26>,<3 12/27><4 12/28>\0";
 	
 	struct climsg *client_msg;
 	client_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
 	struct servmsg *server_msg;
 	server_msg = (struct servmsg*)malloc(sizeof(struct servmsg));
 	server_msg->type = INIT_2P;
-	server_msg->questions = (struct question*)malloc(sizeof(struct question));
+	server_msg->questions = (struct question*)malloc(sizeof(struct question) * question_num);
+	for(int i=0;i<n;i++){
+		question_generate(server_msg->questions + i);
+		answer_correct[i] = (int) (server_msg->questions+i)->ans;
+	}
+	
 	//question set 包含 size_t numq; struct question* questions;
 	//serialize_question(server_msg->questions,3,);
 	
@@ -455,7 +459,7 @@ void* guestroom(void* sock)
 						}
 					}
 				}
-				if(choice == '4'){
+				if(ch == '4'){
 				    Question question;
 				    char send[MAXLINE], recv[MAXLINE];
 
@@ -479,11 +483,9 @@ void* guestroom(void* sock)
 			}
 					
 		}
-	}
-			
-	
+	}		
 }
-void *sign_in(void* ptr){
+void sign_in(void* ptr){
     pthread_t tid;
     struct cli_info *cli2 = (struct cli_info*)ptr;
     free(ptr);
@@ -494,12 +496,12 @@ void *sign_in(void* ptr){
     struct servmsg smsg;
     int n;
     n = Read(connfd, recv, MAXLINE);
-    n = deserialize_climsg(&cmsg, recv, sizeof(struct msg));
+    n = deserialize_climsg(&cmsg, recv, sizeof(struct climsg));
     char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
     int valid = user_check(cmsg.id, cmsg.pw);
     switch(cmsg.type){
-    	case LOGIN:
-    		smsg.type = LOGIN;
+    	case CLI_LOGIN:
+    		smsg.type = SERV_LOGIN;
     		if(valid == 0){
     			//match
     			smsg.success = '1';
@@ -511,8 +513,8 @@ void *sign_in(void* ptr){
     			smsg.success = '0';
     		}
     		break;
-    	case REGISTER:
-    		smsg.type = REGISTER;
+    	case CLI_REGISTER:
+    		smsg.type = SERV_REGISTER;
     		if(valid != -1){
     			smsg.success = '1';
     		}else{
@@ -521,8 +523,10 @@ void *sign_in(void* ptr){
     		break;
     }
     serialize_servmsg( &smsg, send, sizeof(send));
-    Wrtien(connfd, send, sizeof(send));
+    Writen(connfd, send, sizeof(send));
+    
 }
+
 int main(int argc, char **argv)
 {
 	int			listenfd, connfd;

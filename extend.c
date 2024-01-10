@@ -2,50 +2,46 @@
 #include <stdlib.h>
 #include <time.h>
 #include <wchar.h>
+#include "common.h"
 #define N 256
 
-typedef struct questions_{
-    wchar_t problem[N];
-    wchar_t choice[4][N];
-    int answer;
-}Question;
-Question questions[N]; // all question
+struct question questions[N]; // all question
 int question_num_ = 0;
+struct question question_to_confirm[N];
+int question_to_confirm_num = 0;
+
 void question_read(){
     FILE *fp = fopen("./problem.txt", "r");
     wchar_t line[N];
     question_num_ = 0;
     while(fgetws(line, sizeof(line), fp) != NULL){
         swscanf(line, L"\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\",\"%[^\"]\"",
-            questions[question_num_].problem,
-            questions[question_num_].choice[0],
-            questions[question_num_].choice[1],
-            questions[question_num_].choice[2],
-            questions[question_num_].choice[3]);
-            questions[question_num_].answer = 0;
+            questions[question_num_].q,
+            questions[question_num_].option[0],
+            questions[question_num_].option[1],
+            questions[question_num_].option[2],
+            questions[question_num_].option[3]);
+            questions[question_num_].ans = 0;
         ++question_num_;
-
     }
     fclose(fp);
 }
-void question_generate(Question *question){
+void question_generate(struct question *q){
     int rd = rand()%question_num_;
-    memcpy(question, &questions[rd], sizeof(wchar_t) * N);
-    question->answer = rand() % 4;
+    memcpy(q, &questions[rd], sizeof(wchar_t) * N);
+    q->ans = rand() % 4;
     wchar_t temp[N];
-    wcscpy(temp, question->choice[question->answer]);
-    wcscpy(question->choice[question->answer], question->choice[0]);
-    wcscpy(question->choice[0], temp);
+    wcscpy(temp, q->option[q->ans]);
+    wcscpy(q->option[q->ans], q->option[0]);
+    wcscpy(q->option[0], temp);
 }
 
-Question question_to_confirm[N];
-int question_to_confirm_num = 0;
-void question_to_confirm_add(Question question){
-    memcpy(&question_to_confirm[question_to_confirm_num], &question, sizeof(Question));
+
+
+void question_to_confirm_add(struct question q){
+    memcpy(&question_to_confirm[question_to_confirm_num], &q, sizeof(struct question));
     ++question_to_confirm_num;
 }
-
-
 
 //user's part
 typedef struct users_{
@@ -83,7 +79,7 @@ void user_write(){
 // -1 : not found
 //  0 : match
 //  1 : incorrect
-void user_check(char* id, char* pwd){
+int user_check(char* id, char* pwd){
     int i = 0;
     for(;i<user_num;i++){
         if(strcmp(id,users[i].id)==0)break;
@@ -99,4 +95,4 @@ void user_check(char* id, char* pwd){
 
 
 //for test
-int main(){}
+//int main(){}
