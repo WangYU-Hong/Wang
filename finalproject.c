@@ -531,6 +531,7 @@ printf("zz%dzz", valid);
     		smsg.type = SERV_LOGIN;
     		if(valid == 0){
     			//match
+				again = 0;
     			smsg.success = '1';
     		}else if(valid == 1){
     			//incorrect
