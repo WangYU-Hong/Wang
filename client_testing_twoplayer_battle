@@ -147,11 +147,11 @@ void xchg_data(FILE *fp, int sockfd)
 							int type,ans_correct;
 							sscanf(recvline,"%d %d\n",&type,&ans_correct);
 							if (type == 2){
-								printf("這一回合結束，正確答案是 %d ，開始下一回合\n",ans_correct);
+								printf("這一回合結束，正確答案是 %d ，開始下一回合，原始訊息:%s\n",ans_correct,recvline);
 								readserv = 0;
 								break;
 							}
-							char ppid[1000];
+							char ppid[10000];
 							int sc,right,ans;
 							sscanf(recvline,"%d %s %d %d\0",&right,ppid,&sc,&ans);
 							if (right == 0) printf("recv from server ~ id(%s:%d) 錯誤了\n",ppid,sc);
@@ -179,11 +179,13 @@ void xchg_data(FILE *fp, int sockfd)
 				printf("break out from loop\n");
 			}
 			for ( ; ; ){
-				Read(sockfd, recvline, MAXLINE);//read server question 
-				int type;
-				sscanf(recvline,"%d",&type);
-				printf("recv from server: %s\n",recvline);
-				if (type == 3) break;
+				if ( (n = read(sockfd, recvline, MAXLINE)) > 0 ){
+					int type;
+					sscanf(recvline,"%d",&type);
+					printf("recv from server: %s\n",recvline);
+					if (type == 3) break;
+				}
+				
 			}
 		}
 		else if (ch == 3){
@@ -241,7 +243,7 @@ void xchg_data(FILE *fp, int sockfd)
 							int type,ans_correct;
 							sscanf(recvline,"%d %d\n",&type,&ans_correct);
 							if (type == 2){
-								printf("這一回合結束，正確答案是 %d ，開始下一回合\n",ans_correct);
+								printf("這一回合結束，正確答案是 %d ，開始下一回合，原始訊息:%s\n",ans_correct,recvline);
 								readserv = 0;
 								break;
 							}
