@@ -195,7 +195,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					ans = (int)(client_msg->ans) - 48;
 					ans_time = (double)client_msg->anstime;
 					player_ans[i][question_current] = ans;
-					//printf("接收到client");
+					printf("接收到client訊息");
 					if (ans == answer_correct[question_current]){//答案正確
 						answer_num++;
 						player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
