@@ -2,7 +2,7 @@ include ../Make.defines
 
 LIBS += -lncursesw
 CFLAGS = -I../lib -g -D_REENTRANT -Wall
-PROGS = client test_common
+PROGS = client test_common test_screen
 
 client:	client.o screen.o common.o
 		${CC} ${CFLAGS} -o $@ $@.o screen.o common.o ${LIBS}
