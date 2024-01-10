@@ -392,8 +392,8 @@ void* guestroom(void* sock)
 	clock_t time1,time2;
 	//struct twoplayer_battle *your_info = Malloc(sizeof(struct twoplayer_battle));
 	struct twoplayer_battle *your_info = (struct twoplayer_battle *)malloc(sizeof(struct twoplayer_battle));
-	snprintf(send, MAXLINE, "Please enter your choice, 1 (single) ，2 (two player battle)， 3 (multiplayer battle):\n");
-	Writen(connfd,send,MAXLINE);
+	//snprintf(send, MAXLINE, "Please enter your choice, 1 (single) ，2 (two player battle)， 3 (multiplayer battle):\n");
+	//Writen(connfd,send,MAXLINE);
 
 	memset(rec, '\0', sizeof(rec));
 	int guest_seq = seq_number;
