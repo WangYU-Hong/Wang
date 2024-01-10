@@ -98,5 +98,4 @@ void user_check(char* id, char* pwd){
 //void user_modify(){}
 
 
-//for test
-int main(){}
+
