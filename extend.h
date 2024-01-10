@@ -7,6 +7,7 @@
 
 //
 void question_read();
+void question_write();
 void question_generate(struct question *q);
 void question_to_confirm_add(struct question q);
 
@@ -17,6 +18,7 @@ typedef struct users_{
     int coin;
 }User;
 void user_read();
+void user_add();
 void user_write();
 //return
 // -1 : not found

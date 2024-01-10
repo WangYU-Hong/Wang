@@ -545,6 +545,7 @@ printf("zz%dzz", valid);
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
     		if(valid == -1){
+    			user_add(cmsg.id, cmsg.pw);
     			smsg.success = '1';
     		}else{
     			again = 1;
@@ -560,35 +561,55 @@ printf("zz%dzz", valid);
     if(again==1)pthread_create(&tid,NULL,&sign_in,(void*)cli);
     else pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
-/*
+
+
 void ctrlroom(int connfd){
 	int n;
 	char recv[MAXLINE], send[MAXLINE];
 	wchar_t wsend[MAXLINE];
-	snprintf(send, MAXLINE, "0:quit.\n");
-	Writen(connfd, send, MAXLINE);
+	for(;;){
+		snprintf(send, MAXLINE, "0:quit.\n");
+		Writen(connfd, send, MAXLINE);
+		
+		snprintf(send, MAXLINE, "1:commit question.\n");
+		Writen(connfd, send, MAXLINE);
+		
+		snprintf(send, MAXLINE, "2:back up question list.\n");
+		Writen(connfd, send, MAXLINE);
+		
+		snprintf(send, MAXLINE, "3:back up user list.\n");
+		Writen(connfd, send, MAXLINE);
+		
+		Readline(connfd, recv, MAXLINE);
+		int op = 0;
+		sscanf(recv, "%d", &op);
+		switch(op){
+			0:
+				return;
+			1:
+				//send problem and all option
+				//recv y/n
+				break;	
+			2:
+				question_write();
+				break;
+			3:
+				
+				//user_write();
+				break;
+		
+		
+		}
+	}
 	
-	snprintf(send, MAXLINE, "1:commit question.\n");
-	Writen(connfd, send, MAXLINE);
-	
-	snprintf(send, MAXLINE, "2:back up question list.\n");
-	Writen(connfd, send, MAXLINE);
-	
-	snprintf(send, MAXLINE, "3:back up user list.\n");
-	Writen(connfd, send, MAXLINE);
-	
-	Readline(connfd, recv, MAXLINE);
-	int op = 0;
-	sscanf(recv, "%d", &op);
 	
 	
 	
 	
 	
-	
-}*/
+}
 
-/*
+
 void ctrl_listen(void* ptr){
 	int			listenfd, connfd;
 	socklen_t		clilen;
@@ -610,7 +631,7 @@ void ctrl_listen(void* ptr){
                 
                 if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
                         if (errno == EINTR)
-                                continue;               /* back to for() 
+                                continue;               /* back to for() */
                         else
                                 err_sys("accept error");
                 }
@@ -626,7 +647,7 @@ void ctrl_listen(void* ptr){
 		srand((int) ticks);
 		ctrl_room(connfd);
 	}
-}*/
+}
 
 int main(int argc, char **argv)
 {
@@ -643,8 +664,6 @@ int main(int argc, char **argv)
 	//init all question array
 	setlocale(LC_ALL, "");
 	question_read();
-	
-	
 	
 	
 	
