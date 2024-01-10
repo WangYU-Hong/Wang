@@ -131,7 +131,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 		answer_correct[i] = (int) (server_msg->questions+i)->ans;
 		answer_correct[i]++;
 	}
-	
+	server_msg->numq = question_num;
 	//question set 包含 size_t numq; struct question* questions;
 	//serialize_question(server_msg->questions,3,);
 	
@@ -382,7 +382,7 @@ void* guestroom(void* sock)
 	connfd = ((struct cli_info *) sock)->fd;
 	strcpy(id,((struct cli_info *) sock)->id);
 	
-	//free(sock);//cause double free error
+	free(sock);//cause double free error
 	//sock = NULL;
 	Pthread_detach(pthread_self());
 	
@@ -391,8 +391,8 @@ void* guestroom(void* sock)
 	clock_t time1,time2;
 	//struct twoplayer_battle *your_info = Malloc(sizeof(struct twoplayer_battle));
 	struct twoplayer_battle *your_info = (struct twoplayer_battle *)malloc(sizeof(struct twoplayer_battle));
-	snprintf(send, MAXLINE, "Please enter your choice, 1 (single) ，2 (two player battle)， 3 (multiplayer battle):\n");
-	Writen(connfd,send,MAXLINE);
+	//snprintf(send, MAXLINE, "Please enter your choice, 1 (single) ，2 (two player battle)， 3 (multiplayer battle):\n");
+	//Writen(connfd,send,MAXLINE);
 
 	memset(rec, '\0', sizeof(rec));
 	int guest_seq = seq_number;
@@ -508,11 +508,12 @@ void sign_in(void* ptr){
     struct climsg cmsg;
     struct servmsg smsg;
     int n;
-    n = Readline(connfd, recv, MAXLINE);
+    n = Readline(connfd, recv, MAXLINE);//
     if(n==0)return;
-    n = deserialize_climsg(&cmsg, recv, sizeof(struct climsg));
+    n = deserialize_climsg(&cmsg, recv, n);
     char id[LOGIN_MAXLEN], pwd[LOGIN_MAXLEN];
     int valid = user_check(cmsg.id, cmsg.pw);
+printf("zz%dzz", valid);
     switch(cmsg.type){
     	case CLI_LOGIN:
     		smsg.type = SERV_LOGIN;
@@ -529,7 +530,7 @@ void sign_in(void* ptr){
     		break;
     	case CLI_REGISTER:
     		smsg.type = SERV_REGISTER;
-    		if(valid != -1){
+    		if(valid == -1){
     			smsg.success = '1';
     		}else{
     			smsg.success = '0';
@@ -540,7 +541,11 @@ void sign_in(void* ptr){
     		break;
     }
     serialize_servmsg( &smsg, send, sizeof(send));
+	print_servmsg(&smsg);
     Writen(connfd, send, sizeof(send));
+	//memset(&smsg,0,sizeof(smsg));
+	//deserialize_servmsg(&smsg, send, strlen(send));
+	//print_servmsg(&smsg);
     pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
 
@@ -570,10 +575,10 @@ int main(int argc, char **argv)
         Signal(SIGCHLD, sig_chld);      /* must call waitpid() */
         //Signal(SIGINT, sig_chld);
 		fp = fopen("finalproject.log", "a");
-        /*if ((fp = fopen("finalproject.log", "w")) == NULL) {
+        if ((fp = fopen("finalproject.log", "w")) == NULL) {
            printf("log file open error!\n");
            exit(0);
-        };*/
+        };
         
 	for ( ; ; ) {
 				clilen = sizeof(cliaddr);

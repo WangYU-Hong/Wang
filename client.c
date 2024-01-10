@@ -5,7 +5,7 @@
 #include "screen.h"
 
 static int sockfd;
-
+FILE *fp;
 /*If reader recv a msg, des into msg, write into pipe
 If main needn't read yet, and reader recv another msg,
 It just overwrites -> bad
@@ -33,15 +33,16 @@ static char myid[LOGIN_MAXLEN];
 
 void *reader(void *arg)
 {
+    
     char buf[MAXLINE];
-    ssize_t n;
+    ssize_t n,not_readed;
     int ret;
     // used to poll pipe_fd[0]
     fd_set chkset;
     struct timeval t;
-
     while (1)
     {
+        
         n = Readline(sockfd, buf, sizeof(buf));
         if (n == 0)
         {
@@ -56,13 +57,13 @@ void *reader(void *arg)
             t.tv_usec = 0;
             FD_ZERO(&chkset);
             FD_SET(pipe_fd[0], &chkset);
-            n = select(
+            not_readed = select(
                 pipe_fd[0] + 1,
                 &chkset,
                 NULL,
                 NULL,
                 &t);
-        } while (n == 1);
+        } while (not_readed == 1);
         // parse packet
         ret = deserialize_servmsg(&msg, buf, n);
         if (ret < 0)
@@ -476,6 +477,7 @@ void checkerr(int ret) {
 
 int main(int argc, char **argv)
 {
+    
     initscreen();
     Pipe(pipe_fd);
 
