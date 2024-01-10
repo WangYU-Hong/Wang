@@ -319,7 +319,7 @@ int twopgame() {
     // start game
     int myscore = 0, oppscore = 0;
     int myflag = 0, oppflag = 0; // when recved both, go to next question
-    int anssent = 0;
+    int anssent = 0, timeout = 0;
     char key;
     for (int i = 0; i < inmsg.numq; i++) {
         // draw problems
@@ -330,22 +330,24 @@ int twopgame() {
 
         myflag = oppflag = 0;
         anssent = 0;
+        timeout = 0;
+
+        t.tv_sec = 1;
+        t.tv_usec = 0;
 
         while (1) {
 
             // timeout every second
-            t.tv_sec = 1;
-            t.tv_usec = 0;
             FD_ZERO(&readset);
             FD_SET(pipe_fd[0], &readset);
-            if (!anssent)
+            if (!anssent || !timeout)
                 FD_SET(STDIN_FILENO, &readset);
             n = select(
                 max(pipe_fd[0], STDIN_FILENO) + 1,
                 &readset,
                 NULL,
                 NULL,
-                &t
+                timeout ? NULL : &t
             );
 
             if (n == 0) {
@@ -360,9 +362,11 @@ int twopgame() {
                     Writen(sockfd, out, pktlen);
 
                     // next question
-                    break;
+                    timeout = 1;
                 }
                 drawtime(remaintime);
+                t.tv_sec = 1;
+                t.tv_usec = 0;
             }
             else if (n > 0) {
                 // check fds
@@ -407,19 +411,19 @@ int twopgame() {
                             oppflag = 1;
                         }
 
-                        if (myflag && oppflag) {
-                            // got both responses, move to next question
-                            // display correct answer
-                            updateans(key, inmsg.oppans, inmsg.ans);
-                            // wait 5 secs then next question
-                            for (int wait = 5; wait > 0; wait--) {
-                                drawtime(wait);
-                                sleep(1);
-                            }
-                            break;
-                        } 
                     }
                 }
+                if (myflag && oppflag) {
+                    // got both responses, move to next question
+                    // display correct answer
+                    updateans(key, inmsg.oppans, inmsg.ans);
+                    // wait 5 secs then next question
+                    for (int wait = 5; wait > 0; wait--) {
+                        drawtime(wait);
+                        sleep(1);
+                    }
+                    break;
+                } 
             }
         }
     }
@@ -484,9 +488,7 @@ void checkerr(int ret) {
 
 int main(int argc, char **argv)
 {
-    fp = fopen("checkproject.log", "a");
-    initscreen();
-    Pipe(pipe_fd);
+    
 
     if (argc != 2)
         err_quit("usage: client <IPaddress>");
@@ -504,6 +506,11 @@ int main(int argc, char **argv)
     pthread_detach(readthread);
 
     // start client logic
+
+    fp = fopen("checkproject.log", "a");
+    initscreen();
+    Pipe(pipe_fd);
+
     int ret;
     ret = login();
     checkerr(ret);
