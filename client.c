@@ -197,7 +197,7 @@ int login()
         !(inmsg.type == SERV_LOGIN && outmsg.type == CLI_LOGIN)
         && !(inmsg.type == SERV_REGISTER && outmsg.type == CLI_REGISTER)
     );
-    if (!inmsg.success) {
+    if (inmsg.success == '0') {
         // draw login fail screen
         switch (inmsg.type) {
             case SERV_LOGIN:
