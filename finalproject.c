@@ -187,6 +187,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 		for (int i=0;i<total_player;i++){
 			if (FD_ISSET(multi_connfd[i], &rset)){
 		 		if ((n = Readline(multi_connfd[i], rec, MAXLINE)) == 0) {
+					printf("有client死掉了\n");
 					dead = true;
 					memset(sent, '\0', sizeof(sent));
 					memset(server_msg, 0, sizeof(struct servmsg));
