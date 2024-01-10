@@ -188,6 +188,22 @@ void twoplayergame(void *sock){//0->player1   1->player2
 			if (FD_ISSET(multi_connfd[i], &rset)){
 		 		if ((n = Readline(multi_connfd[i], rec, MAXLINE)) == 0) {
 					dead = true;
+					memset(sent, '\0', sizeof(sent));
+					memset(server_msg, 0, sizeof(struct servmsg));
+					server_msg->type = EVAL_ANS;
+					server_msg->player = (char)(9 + 48);
+					server_msg->scorechange = -1;
+					server_msg->correct = '9';
+					for (int j = 0;j<total_player;j++){
+						if (i != j){
+							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
+							Writen(multi_connfd[j], sent, n);//sent result to client
+							else{
+								printf("error for serialize server_msg\n");
+							}
+						}
+					}
+					return;
 				}
 				else if (n > 0){
 					answer_num++;
