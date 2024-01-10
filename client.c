@@ -6,6 +6,7 @@
 
 static int sockfd;
 FILE *fp;
+
 /*If reader recv a msg, des into msg, write into pipe
 If main needn't read yet, and reader recv another msg,
 It just overwrites -> bad
@@ -326,13 +327,14 @@ int twopgame() {
         drawtime(remaintime);
         drawquestion(&inmsg.questions[i]);
         // timeout every second
-        t.tv_sec = 1;
-        t.tv_usec = 0;
+        
 
         myflag = oppflag = 0;
         anssent = 0;
 
         while (1) {
+            t.tv_sec = 1;
+            t.tv_usec = 0;
             FD_ZERO(&readset);
             FD_SET(pipe_fd[0], &readset);
             if (!anssent)
@@ -347,6 +349,7 @@ int twopgame() {
 
             if (n == 0) {
                 // 1 sec passed
+                fprintf(fp,"remaining time %d  nvalue %d\n",remaintime,n);
                 if (--remaintime == 0) {
                     // timeout, send ans = '0'
                     outmsg.type = ANSWER;
@@ -480,7 +483,7 @@ void checkerr(int ret) {
 
 int main(int argc, char **argv)
 {
-    
+    fp = fopen("checkproject.log", "a");
     initscreen();
     Pipe(pipe_fd);
 
