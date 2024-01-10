@@ -204,6 +204,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							}
 						}
 					}
+					flag[seq] = true;
 					return;
 				}
 				else if (n > 0){
@@ -465,8 +466,6 @@ void* guestroom(void* sock)
 				//sscanf(rec,"%d",&ch);//記得關掉
 				if (ch == 2){//twoplayer game
 					player_num += 1;
-					
-					
 					if (player_num == 1) {
 						twoplayer_msg = (struct multiplayer_battle*)malloc(sizeof(struct multiplayer_battle));
 						twoplayer_msg->seq = guest_seq;
