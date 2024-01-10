@@ -218,7 +218,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					printf("接收到client訊息(ans:%d anstime:%d)\n",ans,ans_time);
 					if (answer_num == 1){//答案正確
 						printf("第一則訊息!!! id : %s(current q:%d)\n",multi_id[i],question_current);
-						player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
+						if (ans == answer_correct[question_current]) player_score[i] += 1000*(total_player - answer_num + 1)/total_player;
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->type = EVAL_ANS;
