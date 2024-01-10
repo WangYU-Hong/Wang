@@ -282,6 +282,9 @@ int twopgame() {
         }
     } while (inmsg.type != INIT_2P); // wait until an INIT_2P message
     
+    if (inmsg.numq == 0) {
+        return OTHERERROR;
+    }
     draw2pgame(myid, inmsg.oppid);
     assigned = inmsg.assigned;
     // wait 5 secs then start game
