@@ -201,7 +201,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 						//sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
 						for (int j = 0;j<total_player;j++){
 							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
-								Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+								Writen(multi_connfd[j], sent, n);//sent result to client
 							else{
 								//error for serialize server_msg
 							}
@@ -217,7 +217,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 						server_msg->correct = '0';
 						for (int j = 0;j<total_player;j++){
 							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
-								Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+								Writen(multi_connfd[j], sent, n);//sent result to client
 							else{
 								//error for serialize server_msg
 							}
@@ -235,7 +235,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							if (j == 0) server_msg->player = '0';
 							if (j == 1) server_msg->player = '1';
 							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
-								Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+								Writen(multi_connfd[j], sent, n);//sent result to client
 							else{
 								//error for serialize server_msg
 							}
@@ -265,7 +265,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							
 							for (int j = 0;j<total_player;j++){
 								if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
-									Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
+									Writen(multi_connfd[j], sent, n);//sent result to client
 								else{
 									//error for serialize server_msg
 								}
@@ -596,15 +596,15 @@ int main(int argc, char **argv)
 		struct sockaddr_in myaddr;
 		int myaddrlen = sizeof(myaddr);
 		getpeername(*iptr, (SA*)&myaddr ,&myaddrlen);
-           	ticks = time(NULL);
-            	fprintf(fp, "===================\n");
-            	fprintf (fp, "%.24s: connected from %s, port %d\n",
-                ctime(&ticks),
+		ticks = time(NULL);
+		fprintf(fp, "===================\n");
+		fprintf (fp, "%.24s: connected from %s, port %d\n",
+		ctime(&ticks),
 		Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof (buff)),
-                ntohs(cliaddr.sin_port));
-            	srand((int) ticks);
+		ntohs(cliaddr.sin_port));
+		srand((int) ticks);
 		
-                struct cli_info *cli1 = Malloc(sizeof(struct cli_info));
+		struct cli_info *cli1 = Malloc(sizeof(struct cli_info));
 		cli1->fd = *iptr;
 		free(iptr);
 		iptr = NULL;
