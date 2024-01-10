@@ -540,8 +540,8 @@ void sign_in(void* ptr){
     		//error
     		break;
     }
-    serialize_servmsg( &smsg, send, sizeof(send));
-    Writen(connfd, send, sizeof(send));
+    n = serialize_servmsg( &smsg, send, sizeof(send));
+    Writen(connfd, send, n);
     pthread_create(&tid,NULL,&guestroom,(void*)cli);
 }
 
