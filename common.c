@@ -457,7 +457,7 @@ int deserialize_servmsg(struct servmsg *msg, const void *buf, size_t pktlen) // 
         msg->success = *cur;
         cur += sizeof(msg->success);
         break;
-        
+
     default:
         goto fail;
         break;
@@ -484,6 +484,7 @@ void print_servmsg(const struct servmsg *msg)
         {
             printf("\t%d: %ls\n", j, msg->questions[i].option[j]);
         }
+        printf("\tans: %c", msg->questions[i].ans);
     }
     printf("player=%c, scorechange=%d, correct=%c, ans=%c, oppand=%c\n",
            msg->player,

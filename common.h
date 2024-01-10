@@ -61,6 +61,7 @@ struct question
 {
     wchar_t q[Q_MAXLEN];
     wchar_t option[OPTIONNUM][Q_MAXLEN];
+    char ans; // not used in client
 };
 
 /*Return actual bytes copied, or -1 on error*/
