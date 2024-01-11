@@ -97,6 +97,13 @@ void user_add(char* id, char* pwd){
     users[user_num].coin = 0;
     ++user_num;
 }
+void coin_update(char *id, int coin){
+	for(;i<user_num;i++){
+	    if(strcmp(id,users[i].id)==0){
+	    	users[i].coin+=	coin;
+	    }
+	}
+}
 //return
 // -1 : not found
 //  0 : match
