@@ -609,7 +609,8 @@ printf("zz%dzz", valid);
 
 
 void ctrlroom(int connfd){
-	int n;
+	return;
+	/*int n;
 	char recv[MAXLINE], send[MAXLINE];
 	wchar_t wsend[MAXLINE];
 	for(;;){
@@ -679,7 +680,7 @@ void ctrlroom(int connfd){
 		
 		
 		}
-	}
+	}*/
 	
 	
 	
