@@ -29,7 +29,8 @@ void drawmenu() {
         L"單人遊戲",
         L"雙人對戰",
         L"多人對戰",
-        L"排行榜"
+        L"排行榜",
+        L"上傳題目"
     };
     const size_t optionnum = sizeof(MENUOPTIONS) / sizeof(void *);
 

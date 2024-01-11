@@ -234,6 +234,7 @@ char menu()
         case '2':
         case '3':
         case '4':
+        case '5':
             goto end;
         case 'q':
             exitwin(0);
@@ -457,6 +458,67 @@ int twopgame() {
     return 0;
 }
 
+int uploadq() {
+    struct question myq;
+    // wint_t wintbuf[Q_MAXLEN];
+    wchar_t buf[32];
+rewrite:
+    curs_set(1);
+    nocbreak();
+    echo();
+    clear();
+    addwstr(L"請輸入題目：");
+    getn_wstr((wint_t*)myq.q, Q_MAXLEN-1);
+    clear();
+    addwstr(L"請輸入正確答案：");
+    getn_wstr((wint_t*)myq.option[0], Q_MAXLEN-1);
+    clear();
+    for (int i = 1; i < 4; i++) {
+        swprintf(buf, 32, L"請輸入其他三個選項（%d/3）", i);
+        addwstr(buf);
+        getn_wstr((wint_t*)myq.option[i], Q_MAXLEN-1);
+        clear();
+    }
+    addwstr(L"題目：");
+    addwstr(myq.q);
+    addch('\n');
+    addwstr(L"正確答案：");
+    addwstr(myq.option[0]);
+    addch('\n');
+    addwstr(L"其他選項1：");
+    addwstr(myq.option[1]);
+    addch('\n');
+    addwstr(L"其他選項2：");
+    addwstr(myq.option[2]);
+    addch('\n');
+    addwstr(L"其他選項3：");
+    addwstr(myq.option[3]);
+    addch('\n');
+    addwstr(L"[Enter]送出 [R]重寫 [Q]退出");
+    cbreak();
+    noecho();
+    curs_set(0); // invisible
+reinput:
+    char key = getch();
+    switch (key)
+    {
+    case '\n':
+        // send to server
+        pktlen = serialize_question(&myq, 1, out, sizeof(out));
+        out[pktlen] = PKTEND;
+        pktlen++;
+        Writen(sockfd, buf, pktlen);
+        break;
+    case 'r':
+        goto rewrite;
+    case 'q':
+        break;
+    default:
+        goto reinput;
+    }
+    return 0;
+}
+
 int replay() {
     drawreplay();
     char key;
@@ -514,7 +576,7 @@ int main(int argc, char **argv)
 
     // start client logic
 
-    fp = fopen("checkproject.log", "a");
+    // fp = fopen("checkproject.log", "a");
     initscreen();
     Pipe(pipe_fd);
 
@@ -528,8 +590,13 @@ int main(int argc, char **argv)
         case '2':
             ret = twopgame();
             break;
+        case '5':
+            ret = uploadq();
+            break;
         default:
-            endscreen(L"Not yet implemented");
+            drawendscreen(L"Not yet implemented");
+            getch();
+            break;
     }
 
     checkerr(ret);
