@@ -27,11 +27,11 @@ void question_read(){
     }
     fclose(fp);
 }
-void question_write() {
+int question_write() {
     FILE *fp = fopen("./problem.txt", "w");
     if (fp == NULL) {
         perror("Error opening file");
-        return;
+        return 1;
     }
     for (int i = 0; i < question_num_; ++i) {
         fwprintf(fp, L"\"%ls\",\"%ls\",\"%ls\",\"%ls\",\"%ls\"\n",
@@ -42,6 +42,7 @@ void question_write() {
                  questions[i].option[3]);
     }
     fclose(fp);
+    return 0;
 }
 void question_generate(struct question *q){
     int rd = rand()%question_num_;
@@ -60,15 +61,19 @@ int question_to_confirm_add(struct question q){
     ++question_to_confirm_num;
     return 1;
 }
-int questio_to_confirm_confirm(){
+void question_to_confirm_get(struct question *q){
+	--question_to_confirm_num;
+	memcpy(q, &question_to_confirm[question_to_confirm_num], sizeof(struct question));
+}
+int question_to_confirm_confirm(){
     if(question_to_confirm_num==0)return 1;
     else{
-    	memcpy(&question[auestion_num_], &question_to_confirm[question_to_confirm_num], sizeof(struct question));
+    	memcpy(&questions[question_num_], &question_to_confirm[question_to_confirm_num], sizeof(struct question));
     	++question_to_confirm_num;
     }
     return 1;
 }
-int questio_to_confirm_not_confirm(){
+int question_to_confirm_not_confirm(){
     if(question_to_confirm_num==0)return 1;
     else{
     	--question_to_confirm_num;
@@ -97,8 +102,12 @@ void user_read(){
     }
     fclose(fp);
 }
-void user_write(){
+int user_write(){
     FILE *fp = fopen("./users.txt","w");
+    if (fp == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
     for(int i=0;i<user_num;i++){
         fprintf(fp, "%s %s %d\n",
             users[i].id,
@@ -106,6 +115,7 @@ void user_write(){
             users[i].coin);
     }
     fclose(fp);
+    return 0;
 }
 void user_add(char* id, char* pwd){
     snprintf(users[user_num].id, N, id);
