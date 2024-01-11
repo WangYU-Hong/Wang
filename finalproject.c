@@ -222,12 +222,18 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					printf("接收到client訊息(ans:%d anstime:%d)\n",ans,ans_time);
 					if (answer_num == 1){//答案正確
 						printf("第一則訊息!!! id : %s(current q:%d)\n",multi_id[i],question_current);
-						if (ans == answer_correct[question_current]) player_score[i] += 1000;
+						if (ans == answer_correct[question_current]) {
+							player_score[i] += 1000;
+							server_msg->scorechange = 1000;
+						}
+						else{
+							server_msg->scorechange = 0;
+						}
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->type = EVAL_ANS;
 						server_msg->player = (char)(i + 48);
-						server_msg->scorechange = player_score[i];
+						
 						if (ans == answer_correct[question_current]) server_msg->correct = '1';
 						else server_msg->correct = '0';
 						//sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
@@ -240,8 +246,14 @@ void twoplayergame(void *sock){//0->player1   1->player2
 						}
 					}
 					else if (answer_num == 2){//叫client進入下一輪
-						printf("第二則訊息(current q:%d)!!!\n",question_current);
-						if (ans == answer_correct[question_current]) player_score[i] += 1000*(10 - ans_time + client_msg->anstime);
+						printf("第二則訊息(current q:%d)!!!\n",question_current);//100*(10 - ans_time + client_msg->anstime)
+						if (ans == answer_correct[question_current]) {
+							player_score[i] += 500;
+							server_msg->scorechange = 500;
+						}
+						else{
+							server_msg->scorechange = 0;
+						}
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->ans = (char)(answer_correct[question_current] + 48);
