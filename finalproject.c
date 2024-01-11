@@ -79,6 +79,10 @@ sig_chld(int signo)
         return;
 }
 
+void sig_pipe(int signo){
+	return;
+}
+
 int roundscore(time_t timer){
 	float score = (10 - timer + 1)*1000;
 	return (int)score;
@@ -604,39 +608,73 @@ printf("zz%dzz", valid);
 }
 
 
-void ctrl_room(int connfd){
+void ctrlroom(int connfd){
 	int n;
 	char recv[MAXLINE], send[MAXLINE];
 	wchar_t wsend[MAXLINE];
 	for(;;){
-		snprintf(send, MAXLINE, "0:quit.\n");
-		Writen(connfd, send, MAXLINE);
+
+		//snprintf(send, MAXLINE, "0:quit.\n");
+		//swprintf(send, MAXLINE, L"0:quit");
+		//Writen(connfd, send, MAXLINE);
 		
-		snprintf(send, MAXLINE, "1:commit question.\n");
-		Writen(connfd, send, MAXLINE);
+		//snprintf(send, MAXLINE, "1:commit question.\n");
+		//swprintf(send, MAXLINE, L"1:commit question.");
+		//Writen(connfd, send, MAXLINE);
 		
-		snprintf(send, MAXLINE, "2:back up question list.\n");
-		Writen(connfd, send, MAXLINE);
+		//snprintf(send, MAXLINE, "2:back up question list.\n");
+		//swprintf(send, MAXLINE, L"2:back up question list.\n");
+		//Writen(connfd, send, MAXLINE);
 		
-		snprintf(send, MAXLINE, "3:back up user list.\n");
-		Writen(connfd, send, MAXLINE);
+		//snprintf(send, MAXLINE, "3:back up user list.\n");
+		//swprintf(send, MAXLINE, L"2:back up user list.\n");
+		//Writen(connfd, send, MAXLINE);
+
+		//Readline(connfd, recv, MAXLINE);
 		
-		Readline(connfd, recv, MAXLINE);
 		int op = 0;
 		sscanf(recv, "%d", &op);
 		switch(op){
 			case 0:
+				close(connfd);
 				return;
 			case 1:
+				struct question q;
+				wchar_t buf[Q_MAXLEN];
+				char r[Q_MAXLEN], t[Q_MAXLEN];
 				//send problem and all option
+				question_to_confirm_get(&q);
+				wcscpy(buf, q.q);
+				Writen(connfd, buf, sizeof(wchar_t)*Q_MAXLEN);
+				for(int i=0;i<4;i++){
+					wcscpy(buf, q.option[i]);
+					Writen(connfd, buf, sizeof(wchar_t)*Q_MAXLEN);
+				}
+				
 				//recv y/n
+				n = Readline(connfd, r, Q_MAXLEN);
+				if(n==0){}//connect out
+				else{
+					r[n] = '\0';
+					sscanf(r, "%s", t);
+					if(strcmp(t, "y") == 0){
+						snprintf(send, MAXLINE, "%d\n", question_to_confirm_confirm());
+						Writen(connfd, send, strlen(send));
+					}else if(strcmp(t, "n")==0){
+						snprintf(send, MAXLINE, "%d\n", question_to_confirm_not_confirm());
+						Writen(connfd, send, strlen(send));
+					}
+				}
 				break;	
 			case 2:
-				question_write();
+				snprintf(send, MAXLINE, "%d\n", question_write());
+				Writen(connfd, send, strlen(send));
 				break;
 			case 3:
-				
-				//user_write();
+				snprintf(send, MAXLINE, "%d\n", user_write());
+				Writen(connfd, send, strlen(send));
+				break;
+			default:
 				break;
 		
 		
@@ -662,7 +700,7 @@ void ctrl_listen(void* ptr){
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family      = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port        = htons(SERV_PORT+2);//set server port
+	servaddr.sin_port        = htons(SERV_PORT+2);
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 	Listen(listenfd, LISTENQ);
 
@@ -686,7 +724,7 @@ void ctrl_listen(void* ptr){
 		Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof (buff)),
 		ntohs(cliaddr.sin_port));
 		srand((int) ticks);
-		ctrl_room(connfd);
+		ctrlroom(connfd);
 	}
 }
 
@@ -717,7 +755,8 @@ int main(int argc, char **argv)
 	servaddr.sin_port        = htons(SERV_PORT+3);//set server port
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 	Listen(listenfd, LISTENQ);
-
+	
+	Signal(SIGPIPE, sig_pipe);
         Signal(SIGCHLD, sig_chld);      /* must call waitpid() */
         //Signal(SIGINT, sig_chld);
 		fp = fopen("finalproject.log", "a");

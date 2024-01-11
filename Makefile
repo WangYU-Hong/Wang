@@ -13,6 +13,8 @@ finalproject:	finalproject.o extend.o common.o
 
 testcli:	testcli.o common.o
 		${CC} ${CFLAGS} -o $@ testcli.o common.o ${LIBS}
+syscontroller:	syscontroller.o common.o
+		${CC} ${CFLAGS} -o $@ syscontroller.o common.o ${LIBS}
 
 client:	client.o screen.o common.o
 		${CC} ${CFLAGS} -o $@ $@.o screen.o common.o ${LIBS} -lncursesw
