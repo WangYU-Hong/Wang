@@ -143,7 +143,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 	
 
 	int total_player,multi_connfd[10],final_score[10] = {0};
-	int ans,answer_num;
+	int ans,answer_num, scorechange;
 	time_t ans_time;
 	char multi_id[10][MAXLINE];
 	total_player = ((struct multiplayer_battle*)sock)->total_player;
@@ -222,21 +222,19 @@ void twoplayergame(void *sock){//0->player1   1->player2
 					printf("接收到client訊息(ans:%d anstime:%d)\n",ans,ans_time);
 					if (answer_num == 1){//答案正確
 						printf("第一則訊息!!! id : %s(current q:%d)\n",multi_id[i],question_current);
-						if (ans == answer_correct[question_current]) {
-							player_score[i] += 1000;
-							server_msg->scorechange = 1000;
-						}
-						else{
-							server_msg->scorechange = 0;
-						}
+						if (ans == answer_correct[question_current]) scorechange = 1000*(10 - ans_time + client_msg->anstime);
+						else scorechange = 0;
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->type = EVAL_ANS;
 						server_msg->player = (char)(i + 48);
-						
+						server_msg->scorechange = scorechange;
+						player_score[i] += scorechange;
 						if (ans == answer_correct[question_current]) server_msg->correct = '1';
 						else server_msg->correct = '0';
 						//sprintf(sent,"1 %s %d %d\0",multi_id[i],player_score[i],ans);
+						// print_servmsg(&server_msg);
+						printf("id=%s, score=%d\n", multi_id[i], player_score[i]);
 						for (int j = 0;j<total_player;j++){
 							if ((n = serialize_servmsg(server_msg,sent,sizeof(sent))) > 0)
 								Writen(multi_connfd[j], sent, n);//sent result to client
@@ -246,19 +244,16 @@ void twoplayergame(void *sock){//0->player1   1->player2
 						}
 					}
 					else if (answer_num == 2){//叫client進入下一輪
-						printf("第二則訊息(current q:%d)!!!\n",question_current);//100*(10 - ans_time + client_msg->anstime)
-						if (ans == answer_correct[question_current]) {
-							player_score[i] += 500;
-							server_msg->scorechange = 500;
-						}
-						else{
-							server_msg->scorechange = 0;
-						}
+						printf("第二則訊息(current q:%d)!!!\n",question_current);
+						if (ans == answer_correct[question_current]) scorechange = 1000*(10 - ans_time + client_msg->anstime);
+						else scorechange = 0;
 						memset(sent, '\0', sizeof(sent));
 						memset(server_msg, 0, sizeof(struct servmsg));
 						server_msg->ans = (char)(answer_correct[question_current] + 48);
 						//sprintf(,"%d",answer_correct[question_current]);
 						server_msg->type = EVAL_ANS;
+						player_score[i] += scorechange;
+						server_msg->scorechange = scorechange;
 						for (int j = 0;j<total_player;j++){
 							if (j == 0) server_msg->oppans = (char)(player_ans[1][question_current] + 48);
 							if (j == 1) server_msg->oppans = (char)(player_ans[0][question_current] + 48);
@@ -627,126 +622,125 @@ printf("zz%dzz", valid);
 }
 
 
-void ctrlroom(int connfd){
-	return;
-	/*int n;
-	char recv[MAXLINE], send[MAXLINE];
-	wchar_t wsend[MAXLINE];
-	for(;;){
+// void ctrlroom(int connfd){
+// 	int n;
+// 	char recv[MAXLINE], send[MAXLINE];
+// 	wchar_t wsend[MAXLINE];
+// 	for(;;){
 
-		//snprintf(send, MAXLINE, "0:quit.\n");
-		//swprintf(send, MAXLINE, L"0:quit");
-		//Writen(connfd, send, MAXLINE);
+// 		//snprintf(send, MAXLINE, "0:quit.\n");
+// 		//swprintf(send, MAXLINE, L"0:quit");
+// 		//Writen(connfd, send, MAXLINE);
 		
-		//snprintf(send, MAXLINE, "1:commit question.\n");
-		//swprintf(send, MAXLINE, L"1:commit question.");
-		//Writen(connfd, send, MAXLINE);
+// 		//snprintf(send, MAXLINE, "1:commit question.\n");
+// 		//swprintf(send, MAXLINE, L"1:commit question.");
+// 		//Writen(connfd, send, MAXLINE);
 		
-		//snprintf(send, MAXLINE, "2:back up question list.\n");
-		//swprintf(send, MAXLINE, L"2:back up question list.\n");
-		//Writen(connfd, send, MAXLINE);
+// 		//snprintf(send, MAXLINE, "2:back up question list.\n");
+// 		//swprintf(send, MAXLINE, L"2:back up question list.\n");
+// 		//Writen(connfd, send, MAXLINE);
 		
-		//snprintf(send, MAXLINE, "3:back up user list.\n");
-		//swprintf(send, MAXLINE, L"2:back up user list.\n");
-		//Writen(connfd, send, MAXLINE);
+// 		//snprintf(send, MAXLINE, "3:back up user list.\n");
+// 		//swprintf(send, MAXLINE, L"2:back up user list.\n");
+// 		//Writen(connfd, send, MAXLINE);
 
-		//Readline(connfd, recv, MAXLINE);
+// 		//Readline(connfd, recv, MAXLINE);
 		
-		int op = 0;
-		sscanf(recv, "%d", &op);
-		switch(op){
-			case 0:
-				close(connfd);
-				return;
-			case 1:
-				struct question q;
-				wchar_t buf[Q_MAXLEN];
-				char r[Q_MAXLEN], t[Q_MAXLEN];
-				//send problem and all option
-				question_to_confirm_get(&q);
-				wcscpy(buf, q.q);
-				Writen(connfd, buf, sizeof(wchar_t)*Q_MAXLEN);
-				for(int i=0;i<4;i++){
-					wcscpy(buf, q.option[i]);
-					Writen(connfd, buf, sizeof(wchar_t)*Q_MAXLEN);
-				}
+// 		int op = 0;
+// 		sscanf(recv, "%d", &op);
+// 		switch(op){
+// 			case 0:
+// 				close(connfd);
+// 				return;
+// 			case 1:
+// 				struct question q;
+// 				wchar_t buf[Q_MAXLEN];
+// 				char r[Q_MAXLEN], t[Q_MAXLEN];
+// 				//send problem and all option
+// 				question_to_confirm_get(&q);
+// 				wcscpy(buf, q.q);
+// 				Writen(connfd, buf, sizeof(wchar_t)*Q_MAXLEN);
+// 				for(int i=0;i<4;i++){
+// 					wcscpy(buf, q.option[i]);
+// 					Writen(connfd, buf, sizeof(wchar_t)*Q_MAXLEN);
+// 				}
 				
-				//recv y/n
-				n = Readline(connfd, r, Q_MAXLEN);
-				if(n==0){}//connect out
-				else{
-					r[n] = '\0';
-					sscanf(r, "%s", t);
-					if(strcmp(t, "y") == 0){
-						snprintf(send, MAXLINE, "%d\n", question_to_confirm_confirm());
-						Writen(connfd, send, strlen(send));
-					}else if(strcmp(t, "n")==0){
-						snprintf(send, MAXLINE, "%d\n", question_to_confirm_not_confirm());
-						Writen(connfd, send, strlen(send));
-					}
-				}
-				break;	
-			case 2:
-				snprintf(send, MAXLINE, "%d\n", question_write());
-				Writen(connfd, send, strlen(send));
-				break;
-			case 3:
-				snprintf(send, MAXLINE, "%d\n", user_write());
-				Writen(connfd, send, strlen(send));
-				break;
-			default:
-				break;
+// 				//recv y/n
+// 				n = Readline(connfd, r, Q_MAXLEN);
+// 				if(n==0){}//connect out
+// 				else{
+// 					r[n] = '\0';
+// 					sscanf(r, "%s", t);
+// 					if(strcmp(t, "y") == 0){
+// 						snprintf(send, MAXLINE, "%d\n", question_to_confirm_confirm());
+// 						Writen(connfd, send, strlen(send));
+// 					}else if(strcmp(t, "n")==0){
+// 						snprintf(send, MAXLINE, "%d\n", question_to_confirm_not_confirm());
+// 						Writen(connfd, send, strlen(send));
+// 					}
+// 				}
+// 				break;	
+// 			case 2:
+// 				snprintf(send, MAXLINE, "%d\n", question_write());
+// 				Writen(connfd, send, strlen(send));
+// 				break;
+// 			case 3:
+// 				snprintf(send, MAXLINE, "%d\n", user_write());
+// 				Writen(connfd, send, strlen(send));
+// 				break;
+// 			default:
+// 				break;
 		
 		
-		}
-	}*/
+// 		}
+// 	}
 	
 	
 	
 	
 	
 	
-}
+// }
 
 
-void ctrl_listen(void* ptr){
-	int			listenfd, connfd;
-	socklen_t		clilen;
-	struct sockaddr_in	cliaddr, servaddr;
-        char                    buff[MAXLINE];
-        time_t			ticks;
+// void ctrl_listen(void* ptr){
+// 	int			listenfd, connfd;
+// 	socklen_t		clilen;
+// 	struct sockaddr_in	cliaddr, servaddr;
+//         char                    buff[MAXLINE];
+//         time_t			ticks;
         
-        listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
-	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family      = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port        = htons(SERV_PORT+2);
-	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
-	Listen(listenfd, LISTENQ);
+//         listenfd = Socket(AF_INET, SOCK_STREAM, 0);//listenfd is server fd
+// 	bzero(&servaddr, sizeof(servaddr));
+// 	servaddr.sin_family      = AF_INET;
+// 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+// 	servaddr.sin_port        = htons(SERV_PORT+2);
+// 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+// 	Listen(listenfd, LISTENQ);
 
-	for ( ; ; ) {
-		clilen = sizeof(cliaddr);
-                int connfd;
+// 	for ( ; ; ) {
+// 		clilen = sizeof(cliaddr);
+//                 int connfd;
                 
-                if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
-                        if (errno == EINTR)
-                                continue;               /* back to for() */
-                        else
-                                err_sys("accept error");
-                }
-		struct sockaddr_in myaddr;
-		int myaddrlen = sizeof(myaddr);
-		getpeername(connfd, (SA*)&myaddr ,&myaddrlen);
-		ticks = time(NULL);
-		fprintf(fp, "===================\n");
-		fprintf (fp, "CTRL:%.24s: connected from %s, port %d\n",
-		ctime(&ticks),
-		Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof (buff)),
-		ntohs(cliaddr.sin_port));
-		srand((int) ticks);
-		ctrlroom(connfd);
-	}
-}
+//                 if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
+//                         if (errno == EINTR)
+//                                 continue;               /* back to for() */
+//                         else
+//                                 err_sys("accept error");
+//                 }
+// 		struct sockaddr_in myaddr;
+// 		int myaddrlen = sizeof(myaddr);
+// 		getpeername(connfd, (SA*)&myaddr ,&myaddrlen);
+// 		ticks = time(NULL);
+// 		fprintf(fp, "===================\n");
+// 		fprintf (fp, "CTRL:%.24s: connected from %s, port %d\n",
+// 		ctime(&ticks),
+// 		Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof (buff)),
+// 		ntohs(cliaddr.sin_port));
+// 		srand((int) ticks);
+// 		ctrlroom(connfd);
+// 	}
+// }
 
 int main(int argc, char **argv)
 {
