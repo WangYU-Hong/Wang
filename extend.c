@@ -55,9 +55,25 @@ void question_generate(struct question *q){
 
 
 
-void question_to_confirm_add(struct question q){
+int question_to_confirm_add(struct question q){
     memcpy(&question_to_confirm[question_to_confirm_num], &q, sizeof(struct question));
     ++question_to_confirm_num;
+    return 1;
+}
+int questio_to_confirm_confirm(){
+    if(question_to_confirm_num==0)return 1;
+    else{
+    	memcpy(&question[auestion_num_], &question_to_confirm[question_to_confirm_num], sizeof(struct question));
+    	++question_to_confirm_num;
+    }
+    return 1;
+}
+int questio_to_confirm_not_confirm(){
+    if(question_to_confirm_num==0)return 1;
+    else{
+    	--question_to_confirm_num;
+    }
+    return 1;
 }
 
 //user's part

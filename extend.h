@@ -9,7 +9,9 @@
 void question_read();
 void question_write();
 void question_generate(struct question *q);
-void question_to_confirm_add(struct question q);
+int question_to_confirm_add(struct question q);
+int question_to_confirm_confirm();
+int question_to_confirm_not_confirm();
 
 //user's part
 typedef struct users_{
