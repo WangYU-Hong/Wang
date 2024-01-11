@@ -10,7 +10,7 @@ void question_read();
 void question_write();
 void question_generate(struct question *q);
 void question_to_confirm_add(struct question q);
-void coin_update();
+void coin_update(char *id,int coin);
 //user's part
 typedef struct users_{
     char id[N];

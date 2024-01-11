@@ -98,7 +98,7 @@ void user_add(char* id, char* pwd){
     ++user_num;
 }
 void coin_update(char *id, int coin){
-	for(;i<user_num;i++){
+	for(int i;i<user_num;i++){
 	    if(strcmp(id,users[i].id)==0){
 	    	users[i].coin+=	coin;
 	    }

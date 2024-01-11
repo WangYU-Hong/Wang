@@ -275,14 +275,20 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							if (player_score[0] > player_score[1]){
 								server_msg->resultdata[0].coin = 500;
 								server_msg->resultdata[1].coin = -100;
+								coin_update(multi_id[0],500);
+								coin_update(multi_id[1],-100);
 							}
 							else if(player_score[0] < player_score[1]){
 								server_msg->resultdata[1].coin = 500;
 								server_msg->resultdata[0].coin = -100;
+								coin_update(multi_id[1],500);
+								coin_update(multi_id[0],-100);
 							}
 							else{
 								server_msg->resultdata[1].coin = 100;
 								server_msg->resultdata[0].coin = 100;
+								coin_update(multi_id[1],100);
+								coin_update(multi_id[0],100);
 							}
 							
 							for (int j = 0;j<total_player;j++){
@@ -298,6 +304,7 @@ void twoplayergame(void *sock){//0->player1   1->player2
 							//for (int j = 0;j<total_player;j++) sprintf(sent,"%splayerid:%s\nplayer score:%d\n",sent,multi_id[j],player_score[j]);
 							//for (int j = 0;j<total_player;j++) Writen(multi_connfd[j], sent, MAXLINE);//sent result to client
 							flag[seq] = true;
+							
 							return;
 						}
 						
